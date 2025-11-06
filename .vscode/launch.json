@@ -1,0 +1,100 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            // ========== 基本配置 ==========
+            "name": "OpenOCD Debugging Session",  // 调试配置名称,会显示在VS Code调试面板中
+            "cwd": "${workspaceFolder}",          // 工作目录,通常保持为工作区根目录
+            "type": "cortex-debug",               // 调试器类型,用于ARM Cortex系列MCU
+            
+            // ========== 可执行文件配置 ==========
+            "executable": "${command:cmake.launchTargetPath}",  // 要调试的.elf文件路径
+            // 说明: 使用CMake自动获取编译输出的可执行文件
+            // 移植时可改为: "${workspaceFolder}/build/Debug/your_project.elf"
+            
+            "request": "launch",  // 调试模式: "launch"(启动并调试) 或 "attach"(附加到运行中的程序)
+            
+            // ========== 调试服务器配置 ==========
+            "servertype": "openocd",  // GDB服务器类型,可选: openocd, stlink, jlink, pyocd等
+            
+            // ========== 目标设备配置 ==========
+            "device": "STM32F407VETx",  // 目标MCU型号
+            // 移植时需修改为你的芯片型号,如: STM32F103C8, STM32H743VI等
+            
+            "interface": "swd",  // 调试接口,可选: swd(推荐) 或 jtag
+            
+            "runToEntryPoint": "main",  // 启动后自动运行到此函数并暂停,通常设为"main"
+            
+            // ========== SVD文件配置 ==========
+            "svdFile": "${config:STM32VSCodeExtension.cubeCLT.path}/STMicroelectronics_CMSIS_SVD/STM32F407.svd",
+            // SVD文件提供外设寄存器的可视化查看功能
+            // 移植时需修改为对应芯片的SVD文件路径
+            // 下载地址: https://github.com/cmsis-svd/cmsis-svd
+            
+            // ========== OpenOCD路径配置 ==========
+            "serverpath": "E:/OpenOCD-20250710-0.12.0/bin/openocd.exe",
+            // OpenOCD可执行文件的完整路径
+            // 移植时需修改为你系统中OpenOCD的实际安装路径
+            // Linux/Mac示例: "/usr/local/bin/openocd"
+            
+            // ========== OpenOCD配置文件 ==========
+            "configFiles": [
+                "interface/cmsis-dap.cfg",  // 调试器接口配置文件
+                // 常用接口配置:
+                //   - interface/cmsis-dap.cfg    (DAPLink调试器)
+                //   - interface/stlink-v2.cfg    (ST-Link V2)
+                //   - interface/stlink.cfg       (ST-Link V2-1/V3)
+                //   - interface/jlink.cfg        (J-Link)
+                
+                "target/stm32f4x.cfg"        // 目标芯片配置文件
+                // 移植时需修改为对应的芯片系列配置:
+                //   - target/stm32f1x.cfg  (STM32F1系列)
+                //   - target/stm32f4x.cfg  (STM32F4系列)
+                //   - target/stm32h7x.cfg  (STM32H7系列)
+                //   完整列表查看OpenOCD的scripts/target目录
+            ],
+            
+            // ========== OpenOCD脚本搜索目录 ==========
+            "searchDir": [
+                "E:/OpenOCD-20250710-0.12.0/share/openocd/scripts"
+            ],
+            // OpenOCD配置脚本的搜索路径
+            // 移植时需修改为你的OpenOCD安装目录下的scripts文件夹
+            // Linux示例: "/usr/share/openocd/scripts"
+            
+            // ========== GDB路径配置 ==========
+            "gdbPath": "${config:STM32VSCodeExtension.cubeCLT.path}/GNU-tools-for-STM32/bin/arm-none-eabi-gdb",
+            // ARM GDB调试器的路径
+            // 移植时可能需要修改,如使用自己安装的工具链:
+            //   Windows: "C:/gcc-arm-none-eabi/bin/arm-none-eabi-gdb.exe"
+            //   Linux: "/usr/bin/arm-none-eabi-gdb"
+            
+            // ========== 调试启动前命令 ==========
+            "preLaunchCommands": [
+                "set mem inaccessible-by-default off",  // 允许访问所有内存区域,避免某些区域无法读取
+                "enable breakpoint",                     // 启用断点功能
+                "monitor reset halt"                     // 复位MCU并立即停止,确保从头开始调试
+            ],
+            // 这些GDB命令在程序下载到芯片后、开始调试前执行
+            
+            // ========== 调试重启后命令 ==========
+            "postRestartCommands": [
+                "monitor reset halt"  // 重启调试会话时,复位MCU并停止
+            ]
+            // 当在调试过程中点击"重启"按钮时执行这些命令
+            
+            // ========== 移植检查清单 ==========
+            // 1. 修改 device 为目标MCU型号
+            // 2. 修改 svdFile 为对应芯片的SVD文件
+            // 3. 修改 serverpath 为OpenOCD安装路径
+            // 4. 修改 configFiles 中的接口和目标配置文件
+            // 5. 修改 searchDir 为OpenOCD脚本目录
+            // 6. 修改 gdbPath 为GDB工具链路径
+            // 7. 根据需要修改 executable 路径
+            // 8. 确认调试器硬件连接(SWD/JTAG接口)
+        }
+            ]
+}

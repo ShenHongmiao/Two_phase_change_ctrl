@@ -1,0 +1,135 @@
+{
+    // ========== Tasks配置文件版本 ==========
+    "version": "2.0.0",
+    
+    // ========== Windows平台特定配置 ==========
+    "windows": {
+        "options": {
+            "shell": {
+                "executable": "cmd.exe",  // 使用CMD作为shell执行器
+                "args": ["/d", "/c"]      // /d: 禁用AutoRun命令, /c: 执行命令后关闭
+                // 移植说明: Linux/Mac系统会自动使用bash/sh,无需此配置
+            }
+        }
+    },
+    
+    "tasks": [
+        // ========== 任务1: CMake清理并重新编译 ==========
+        {
+            "type": "cmake",  // 任务类型: CMake专用任务
+            "label": "CMake: clean rebuild",  // 任务名称
+            
+            "command": "cleanRebuild",  // CMake命令: 清理旧文件并重新编译
+            // 其他可选命令:
+            //   - "build": 仅编译(增量编译)
+            //   - "clean": 仅清理
+            //   - "rebuild": 重新编译(不清理)
+            
+            "targets": [
+                "all"  // 编译目标: all表示编译所有目标
+                // 可改为具体目标名称,如: ["my_project.elf"]
+            ],
+            
+            "preset": "${command:cmake.activeBuildPresetName}",
+            // 使用当前激活的CMake预设配置
+            // 预设配置定义在CMakePresets.json中
+            // 移植时: 确保CMakePresets.json中有对应的预设配置
+            
+            "group": "build",  // 任务分组: 属于构建类任务
+            // 可以通过 Ctrl+Shift+B 快捷键调用构建组任务
+            
+            "problemMatcher": [],  // 问题匹配器
+            
+            "detail": "CMake template clean rebuild task"  // 任务详细描述
+        },
+        // ========== 任务2: 列出所有可用的通信接口 (诊断工具) ==========
+        {
+            "type": "shell",
+            "label": "CubeProg: List all available communication interfaces",
+            
+            "command": "STM32_Programmer_CLI",  // STM32烧录工具命令行
+            
+            "args": ["--list"],  // 列出所有连接的ST-Link/调试器
+            // 使用场景: 
+            //   - 检查调试器是否正确连接
+            //   - 查看调试器的序列号(多调试器环境)
+            //   - 诊断连接问题
+            
+            "options": {
+                "cwd": "${workspaceFolder}"  // 工作目录
+            },
+            
+            "problemMatcher": []
+        },
+        
+        // ========== 任务3: 使用OpenOCD通过CMSIS-DAP烧录程序 ==========
+        {
+            "type": "shell",
+            "label": "OpenOCD: Flash project (CMSIS-DAP)",
+            
+            // ========== OpenOCD命令 ==========
+            "command": "openocd",
+            // 说明: 开源的片上调试工具,支持多种调试器和芯片
+            // 移植前提: 需要安装OpenOCD并添加到系统PATH
+            // 下载地址: https://openocd.org/ 或 https://github.com/xpack-dev-tools/openocd-xpack
+            
+            // ========== OpenOCD参数详解 ==========
+            "args": [
+                "-f",  // -f: 加载配置文件
+                "interface/cmsis-dap.cfg",  // 调试器接口配置
+                // 常用调试器接口配置文件:
+                //   - interface/cmsis-dap.cfg    (DAPLink/CMSIS-DAP调试器)
+                //   - interface/stlink-v2.cfg    (ST-Link V2)
+                //   - interface/stlink.cfg       (ST-Link V2-1/V3)
+                //   - interface/jlink.cfg        (SEGGER J-Link)
+                //   - interface/ftdi/...         (FTDI系列调试器)
+                // 移植时: 根据实际使用的调试器修改
+                
+                "-f",  // 加载第二个配置文件
+                "target/stm32f4x.cfg",  // 目标芯片配置
+                // 常用芯片配置文件:
+                //   - target/stm32f1x.cfg  (STM32F1系列)
+                //   - target/stm32f4x.cfg  (STM32F4系列)
+                //   - target/stm32f7x.cfg  (STM32F7系列)
+                //   - target/stm32h7x.cfg  (STM32H7系列)
+                //   - target/stm32l4x.cfg  (STM32L4系列)
+                // 完整列表查看: OpenOCD安装目录/scripts/target/
+                // 移植时: 根据目标芯片系列修改
+                
+                "-c",  // -c: 执行OpenOCD命令
+                "program ${command:st-stm32-ide-debug-launch.get-projects-binary-from-context1} verify reset exit"
+                // 命令说明:
+                //   program <file>: 烧录指定文件到芯片
+                //   verify:         烧录后验证数据完整性
+                //   reset:          烧录完成后复位芯片
+                //   exit:           烧录完成后退出OpenOCD
+                // 移植时: 可将变量改为固定路径
+                //   如: "program ${workspaceFolder}/build/Debug/my_project.elf verify reset exit"
+                //   或: "program ${workspaceFolder}/build/Debug/my_project.bin 0x08000000 verify reset exit"
+                //       (对于.bin文件需要指定烧录地址,通常STM32为0x08000000)
+            ],
+            
+            "options": {
+                "cwd": "${workspaceFolder}"  // 命令执行目录
+            },
+            
+            "problemMatcher": []
+            
+            // ========== OpenOCD vs STM32CubeProgrammer 对比 ==========
+            // OpenOCD:
+            //   优点: 开源免费,跨平台,支持多种调试器和芯片
+            //   缺点: 配置相对复杂,部分新芯片支持较慢
+            // STM32CubeProgrammer:
+            //   优点: ST官方工具,支持最新芯片,功能全面
+            //   缺点: 仅限STM32芯片,Windows下体验更好
+            
+            // ========== 移植检查清单 ==========
+            // 1. 确认OpenOCD已安装并在PATH中
+            // 2. 修改interface配置文件匹配你的调试器
+            // 3. 修改target配置文件匹配你的芯片系列
+            // 4. 修改program命令中的文件路径
+            // 5. 对于.bin文件,需要添加烧录起始地址
+            // 6. 可添加OpenOCD配置文件搜索路径: -s <path>
+        }
+    ]
+}

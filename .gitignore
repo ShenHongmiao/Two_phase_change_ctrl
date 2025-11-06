@@ -1,0 +1,112 @@
+# Build directories
+build/
+cmake-build-*/
+out/
+mx.scratch
+
+# CMake generated files (keep cmake/ folder with toolchain configs)
+CMakeCache.txt
+cmake_install.cmake
+CMakeFiles/
+compile_commands.json
+CTestTestfile.cmake
+_deps
+*.ninja
+
+# Object files
+*.o
+*.obj
+*.elf
+*.bin
+*.hex
+*.map
+*.lst
+*.su
+*.d
+
+# Debug files
+*.dSYM/
+*.dwarf
+
+# Libraries
+*.lib
+*.a
+*.la
+*.lo
+
+# Shared objects
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# IDE and Editor files - VSCode (keep tasks.json and launch.json)
+.vscode/*
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Other IDE files
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# STM32CubeIDE
+.settings/
+Debug/
+Release/
+.cproject
+.project
+.mxproject
+
+# Keil MDK-ARM
+*.uvguix.*
+*.uvopt
+*.bak
+*.dep
+*.crf
+*.lnp
+*.axf
+*.tra
+*.htm
+*.sct
+JLinkLog.txt
+JLinkSettings.ini
+
+# IAR EWARM
+settings/
+*.ewt
+*.ewd
+*.dni
+*.wsdt
+*.dbgdt
+
+# OS generated files
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# User-specific files
+*.user
+*.suo
+*.ncb
+*.sdf
+*.opensdf
+*.VC.db
+*.VC.opendb
+
+# Note: .ioc files are kept (STM32CubeMX configuration)
+# Note: .vscode/tasks.json and launch.json are kept for build/debug configs
