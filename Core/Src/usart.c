@@ -21,7 +21,7 @@
 #include "usart.h"
 
 /* USER CODE BEGIN 0 */
-
+#include "FreeRTOS.h"
 #define UART_TX_BUFFER_SIZE 256
 
 // 双缓冲区A和B
@@ -37,6 +37,8 @@ static volatile uint8_t active_buf_index = 0;
 
 // 互斥锁，保护缓冲区切换和状态变量
 static osMutexId uart_tx_mutex = NULL;
+
+uint8_t rx_byte; // 用于接收单个字节
 /* USER CODE END 0 */
 
 UART_HandleTypeDef huart1;
@@ -345,6 +347,30 @@ void send_message(const char *format, ...)
 }
 
 /**
+ * @brief 发送格式化消息，串口2，阻塞方式
+ * @param format 消息格式
+ * @param ...   可变参数
+ */
+void send_message_direct(const char *format, ...)
+{
+    char temp_buffer[UART_TX_BUFFER_SIZE];
+    va_list args;
+    int len;
+
+    // 开始处理可变参数
+    va_start(args, format);
+    // 将格式化字符串写入临时缓冲区
+    len = vsnprintf(temp_buffer, UART_TX_BUFFER_SIZE, format, args);
+    va_end(args);
+
+    // 验证长度有效性后使用阻塞方式发送
+    if (len > 0 && len < UART_TX_BUFFER_SIZE) {
+        HAL_UART_Transmit(&huart2, (uint8_t*)temp_buffer, len, 1000);
+    }
+}
+
+
+/**
  * @brief UART DMA发送完成回调函数
  * @param huart UART句柄
  */
@@ -377,26 +403,16 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
     }
 }
 
-/**
- * @brief 发送格式化消息，串口2，阻塞方式
- * @param format 消息格式
- * @param ...   可变参数
- */
-void send_message_direct(const char *format, ...)
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-    char temp_buffer[UART_TX_BUFFER_SIZE];
-    va_list args;
-    int len;
-
-    // 开始处理可变参数
-    va_start(args, format);
-    // 将格式化字符串写入临时缓冲区
-    len = vsnprintf(temp_buffer, UART_TX_BUFFER_SIZE, format, args);
-    va_end(args);
-
-    // 验证长度有效性后使用阻塞方式发送
-    if (len > 0 && len < UART_TX_BUFFER_SIZE) {
-        HAL_UART_Transmit(&huart2, (uint8_t*)temp_buffer, len, 1000);
+    if (huart->Instance == USART2) {
+        // 将接收到的字节放入队列
+        // 注意：osMessagePut 可以在 ISR 中调用，但中断优先级必须正确配置
+        // 队列满时会返回错误，不会阻塞
+        osMessagePut(usart2_rx_queueHandle, (uint32_t)rx_byte, 0);
+        
+        // 重新启动接收
+        HAL_UART_Receive_IT(&huart2, &rx_byte, 1);
     }
 }
 

@@ -47,6 +47,10 @@ void MX_USART1_UART_Init(void);
 void MX_USART2_UART_Init(void);
 
 /* USER CODE BEGIN Prototypes */
+extern osMessageQId usart2_rx_queueHandle;
+extern osMessageQId usart1_rx_queueHandle;
+extern uint8_t rx_byte;
+
 void send_message(const char *format, ...);
 void send_message_direct(const char *format, ...);
 /* USER CODE END Prototypes */

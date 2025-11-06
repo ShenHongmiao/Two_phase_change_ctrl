@@ -27,6 +27,7 @@
 /* USER CODE BEGIN Includes */
 #include "WF5803F.h"
 #include "usart.h"
+#include <string.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -156,9 +157,11 @@ void MX_FREERTOS_Init(void) {
 void StartDefaultTask(void const * argument)
 {
   /* USER CODE BEGIN StartDefaultTask */
+  HAL_UART_Receive_IT(&huart2, &rx_byte, 1);
   /* Infinite loop */
   for(;;)
-  {
+  { //删除自己CMSIS_V1接口
+    osThreadTerminate(NULL);
     osDelay(1);
   }
   /* USER CODE END StartDefaultTask */
@@ -204,7 +207,7 @@ void StartSensors_compute(void const * argument)
     }
     
     // 可以根据需要调整读取频率，最小间隔5ms
-    osDelay(5);
+    osDelay(100);
   }
   /* USER CODE END StartSensors_compute */
 }
@@ -237,9 +240,27 @@ void StartVoltageMonitor(void const * argument)
 void StartReceiveAndTarge(void const * argument)
 {
   /* USER CODE BEGIN StartReceiveAndTarge */
+  osEvent event;
+  uint8_t received_byte;
+  send_message("=== USART Receive Task Started (Priority: Realtime) ===\n");
   /* Infinite loop */
   for(;;)
-  {
+  {    // 阻塞读取队列，永久等待直到有数据到来
+    event = osMessageGet(usart2_rx_queueHandle, osWaitForever);
+    
+    if (event.status == osEventMessage) {
+      // 成功接收到数据
+      received_byte = (uint8_t)event.value.v;
+      
+      // 发送接收到的数据信息
+      send_message("Received byte from USART2: '%c' (0x%02X)\n", 
+                   received_byte, received_byte);
+      // ========== 在此处添加命令处理逻辑 ==========
+    
+      }
+    
+    // 注意：不需要 osDelay，因为 osMessageGet 本身就是阻塞的
+    // 当没有数据时，任务会自动进入阻塞状态，让出 CPU
     osDelay(1);
   }
   /* USER CODE END StartReceiveAndTarge */
