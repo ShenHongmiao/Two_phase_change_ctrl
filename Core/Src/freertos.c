@@ -27,6 +27,7 @@
 /* USER CODE BEGIN Includes */
 #include "WF5803F.h"
 #include "usart.h"
+#include "NTC.h"
 #include <string.h>
 /* USER CODE END Includes */
 
@@ -140,7 +141,7 @@ void MX_FREERTOS_Init(void) {
   VoltageWarningHandle = osThreadCreate(osThread(VoltageWarning), NULL);
 
   /* definition and creation of Receive_Target_ */
-  osThreadDef(Receive_Target_, StartReceive_Target_change, osPriorityIdle, 0, 256);
+  osThreadDef(Receive_Target_, StartReceive_Target_change, osPriorityLow, 0, 256);
   Receive_Target_Handle = osThreadCreate(osThread(Receive_Target_), NULL);
 
   /* definition and creation of Ctrl_task */
@@ -163,7 +164,18 @@ void MX_FREERTOS_Init(void) {
 void StartDefaultTask(void const * argument)
 {
   /* USER CODE BEGIN StartDefaultTask */
-  HAL_UART_Receive_IT(&huart2, &rx_byte, 1);
+  // 初始化外设
+  osDelay(10); // 确保系统稳定
+  // 发送启动消息（使用非阻塞方式，但此时已经没有竞争）
+  send_message("system start\n");
+  HAL_UART_Receive_IT(&huart2, &rx_byte, 1);//打开串口2接收中断，接收到的数据放入rx_byte变量，相当于初始化接收
+  NTC_Init();//初始化NTC模块
+  
+
+  
+  // 再延迟一下确保消息发送
+  osDelay(50);
+  
   /* Infinite loop */
   for(;;)
   { //删除自己CMSIS_V1接口
@@ -183,10 +195,35 @@ void StartDefaultTask(void const * argument)
 void StartMonitorTask(void const * argument)
 {
   /* USER CODE BEGIN StartMonitorTask */
+  float temperature;
+  float pressure;
+  
+  // 等待DefaultTask完成初始化和发送启动消息
+  osDelay(100);
+  
+  NTC_StartDMA();//启动NTC的ADC DMA转换
   /* Infinite loop */
   for(;;)
-  {
-    osDelay(1);
+  { 
+    #if WF5803F_Enable
+    WF5803F_GetData(&temperature, &pressure);//读取WF5803F传感器数据
+    #endif
+
+    NTC_Calculate(&NTC_DataBuffer);//计算温度
+    //判断宏定义来发送信息
+    #if NTC_CHANNEL0_ENABLE
+    send_message("{\"type\":\"data\",\"sensor\":\"NTC_0\",\"temp\":%.2f}\n", NTC_DataBuffer.temperature_ch0);
+    #endif
+    #if NTC_CHANNEL1_ENABLE
+    send_message("{\"type\":\"data\",\"sensor\":\"NTC_1\",\"temp\":%.2f}\n", NTC_DataBuffer.temperature_ch1);
+    #endif
+    //发送WF5803F数据
+    #if WF5803F_Enable
+    send_message("{\"type\":\"data\",\"sensor\":\"WF5803F\",\"temp\":%.2f,\"pressure\":%.2f}\n", temperature, pressure);
+    #endif
+    NTC_StartDMA();//数据利用完毕重新启动DMA转换
+    //绝对时间控制延迟
+    osDelay(100);
   }
   /* USER CODE END StartMonitorTask */
 }

@@ -103,7 +103,9 @@ int main(void)
   MX_ADC2_Init();
   /* USER CODE BEGIN 2 */
   //发送启动消息
-  HAL_UART_Transmit(&huart2, (uint8_t *)"System Start\r\n", 14, 1000);
+  //上电关闭加热，占空比调节为0，防止误动作
+  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 0);
+  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 0);
   /* USER CODE END 2 */
 
   /* Call init function for freertos objects (in cmsis_os2.c) */
