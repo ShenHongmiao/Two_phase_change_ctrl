@@ -50,9 +50,10 @@
 
 /* USER CODE END Variables */
 osThreadId defaultTaskHandle;
-osThreadId Sensors_computeHandle;
-osThreadId VoltageMonitorHandle;
-osThreadId ReceiveAndTargeHandle;
+osThreadId MonitorTaskHandle;
+osThreadId VoltageWarningHandle;
+osThreadId Receive_Target_Handle;
+osThreadId Ctrl_taskHandle;
 osMessageQId usart2_rx_queueHandle;
 osMessageQId usart1_rx_queueHandle;
 osMutexId usart2_rx_mutexesHandle;
@@ -63,9 +64,10 @@ osMutexId usart2_rx_mutexesHandle;
 /* USER CODE END FunctionPrototypes */
 
 void StartDefaultTask(void const * argument);
-void StartSensors_compute(void const * argument);
-void StartVoltageMonitor(void const * argument);
-void StartReceiveAndTarge(void const * argument);
+void StartMonitorTask(void const * argument);
+void StartvoltageWarningtask(void const * argument);
+void StartReceive_Target_change(void const * argument);
+void StartCtrl_task(void const * argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -129,17 +131,21 @@ void MX_FREERTOS_Init(void) {
   osThreadDef(defaultTask, StartDefaultTask, osPriorityRealtime, 0, 256);
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
-  /* definition and creation of Sensors_compute */
-  osThreadDef(Sensors_compute, StartSensors_compute, osPriorityHigh, 0, 512);
-  Sensors_computeHandle = osThreadCreate(osThread(Sensors_compute), NULL);
+  /* definition and creation of MonitorTask */
+  osThreadDef(MonitorTask, StartMonitorTask, osPriorityHigh, 0, 256);
+  MonitorTaskHandle = osThreadCreate(osThread(MonitorTask), NULL);
 
-  /* definition and creation of VoltageMonitor */
-  osThreadDef(VoltageMonitor, StartVoltageMonitor, osPriorityLow, 0, 256);
-  VoltageMonitorHandle = osThreadCreate(osThread(VoltageMonitor), NULL);
+  /* definition and creation of VoltageWarning */
+  osThreadDef(VoltageWarning, StartvoltageWarningtask, osPriorityLow, 0, 256);
+  VoltageWarningHandle = osThreadCreate(osThread(VoltageWarning), NULL);
 
-  /* definition and creation of ReceiveAndTarge */
-  osThreadDef(ReceiveAndTarge, StartReceiveAndTarge, osPriorityIdle, 0, 256);
-  ReceiveAndTargeHandle = osThreadCreate(osThread(ReceiveAndTarge), NULL);
+  /* definition and creation of Receive_Target_ */
+  osThreadDef(Receive_Target_, StartReceive_Target_change, osPriorityIdle, 0, 256);
+  Receive_Target_Handle = osThreadCreate(osThread(Receive_Target_), NULL);
+
+  /* definition and creation of Ctrl_task */
+  osThreadDef(Ctrl_task, StartCtrl_task, osPriorityHigh, 0, 512);
+  Ctrl_taskHandle = osThreadCreate(osThread(Ctrl_task), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -167,103 +173,76 @@ void StartDefaultTask(void const * argument)
   /* USER CODE END StartDefaultTask */
 }
 
-/* USER CODE BEGIN Header_StartSensors_compute */
+/* USER CODE BEGIN Header_StartMonitorTask */
 /**
-* @brief Function implementing the Sensors_compute thread.
+* @brief Function implementing the MonitorTask thread.
 * @param argument: Not used
 * @retval None
 */
-/* USER CODE END Header_StartSensors_compute */
-void StartSensors_compute(void const * argument)
+/* USER CODE END Header_StartMonitorTask */
+void StartMonitorTask(void const * argument)
 {
-  /* USER CODE BEGIN StartSensors_compute */
-  float temperature = 0.0f;
-  float pressure = 0.0f;
-  send_message("=== Sensors_and_compute Task Started! ===\n");
-  osDelay(10);
-  /* Infinite loop */
-  for(;;)
-  {
-    // 读取温度和气压数据（使用DMA方式，非阻塞）
-    WF5803F_GetData(&temperature, &pressure);
-    
-    // 检查是否有错误
-    if (g_i2c_rx_status == I2C_DMA_ERROR || g_i2c_tx_status == I2C_DMA_ERROR) {
-      // 错误处理：可以记录日志、重试或其他操作
-      //阻塞发送，HAL
-      send_message("WF5803F I2C DMA Error!\n");
-      // 重置状态标志，准备下次读取
-      g_i2c_rx_status = I2C_DMA_IDLE;
-      g_i2c_tx_status = I2C_DMA_IDLE;
-    } else {
-      //重置状态标志，准备下次读取
-      //g_i2c_rx_status = I2C_DMA_IDLE;
-      g_i2c_tx_status = I2C_DMA_IDLE;
-      // 数据读取成功，可以在这里使用temperature和pressure
-      // 例如：发送到串口、存储、控制逻辑等
-     send_message("{\"type\":\"data\",\"sensor\":\"WF5803\",\"temp\":%.2f,\"press\":%.2f}\n", temperature, pressure);
-      // 示例：通过串口打印（如果需要的话）
-      // printf("Temp: %.2f °C, Press: %.2f kPa\r\n", temperature, pressure);
-    }
-    
-    // 可以根据需要调整读取频率，最小间隔5ms
-    osDelay(100);
-  }
-  /* USER CODE END StartSensors_compute */
-}
-
-/* USER CODE BEGIN Header_StartVoltageMonitor */
-/**
-* @brief Function implementing the VoltageMonitor thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_StartVoltageMonitor */
-void StartVoltageMonitor(void const * argument)
-{
-  /* USER CODE BEGIN StartVoltageMonitor */
+  /* USER CODE BEGIN StartMonitorTask */
   /* Infinite loop */
   for(;;)
   {
     osDelay(1);
   }
-  /* USER CODE END StartVoltageMonitor */
+  /* USER CODE END StartMonitorTask */
 }
 
-/* USER CODE BEGIN Header_StartReceiveAndTarge */
+/* USER CODE BEGIN Header_StartvoltageWarningtask */
 /**
-* @brief Function implementing the ReceiveAndTarge thread.
+* @brief Function implementing the VoltageWarning thread.
 * @param argument: Not used
 * @retval None
 */
-/* USER CODE END Header_StartReceiveAndTarge */
-void StartReceiveAndTarge(void const * argument)
+/* USER CODE END Header_StartvoltageWarningtask */
+void StartvoltageWarningtask(void const * argument)
 {
-  /* USER CODE BEGIN StartReceiveAndTarge */
-  osEvent event;
-  uint8_t received_byte;
-  send_message("=== USART Receive Task Started (Priority: Realtime) ===\n");
+  /* USER CODE BEGIN StartvoltageWarningtask */
   /* Infinite loop */
   for(;;)
-  {    // 阻塞读取队列，永久等待直到有数据到来
-    event = osMessageGet(usart2_rx_queueHandle, osWaitForever);
-    
-    if (event.status == osEventMessage) {
-      // 成功接收到数据
-      received_byte = (uint8_t)event.value.v;
-      
-      // 发送接收到的数据信息
-      send_message("Received byte from USART2: '%c' (0x%02X)\n", 
-                   received_byte, received_byte);
-      // ========== 在此处添加命令处理逻辑 ==========
-    
-      }
-    
-    // 注意：不需要 osDelay，因为 osMessageGet 本身就是阻塞的
-    // 当没有数据时，任务会自动进入阻塞状态，让出 CPU
+  {
     osDelay(1);
   }
-  /* USER CODE END StartReceiveAndTarge */
+  /* USER CODE END StartvoltageWarningtask */
+}
+
+/* USER CODE BEGIN Header_StartReceive_Target_change */
+/**
+* @brief Function implementing the Receive_Target_ thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartReceive_Target_change */
+void StartReceive_Target_change(void const * argument)
+{
+  /* USER CODE BEGIN StartReceive_Target_change */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END StartReceive_Target_change */
+}
+
+/* USER CODE BEGIN Header_StartCtrl_task */
+/**
+* @brief Function implementing the Ctrl_task thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartCtrl_task */
+void StartCtrl_task(void const * argument)
+{
+  /* USER CODE BEGIN StartCtrl_task */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END StartCtrl_task */
 }
 
 /* Private application code --------------------------------------------------*/

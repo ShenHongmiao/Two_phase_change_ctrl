@@ -22,7 +22,6 @@
 #include "adc.h"
 #include "dma.h"
 #include "i2c.h"
-#include "stm32f4xx_hal_uart.h"
 #include "tim.h"
 #include "usart.h"
 #include "gpio.h"
@@ -101,6 +100,7 @@ int main(void)
   MX_USART1_UART_Init();
   MX_USART2_UART_Init();
   MX_I2C2_Init();
+  MX_ADC2_Init();
   /* USER CODE BEGIN 2 */
   //发送启动消息
   HAL_UART_Transmit(&huart2, (uint8_t *)"System Start\r\n", 14, 1000);
