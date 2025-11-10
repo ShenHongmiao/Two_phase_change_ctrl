@@ -28,6 +28,7 @@
 #include "WF5803F.h"
 #include "usart.h"
 #include "NTC.h"
+#include "V_Detect.h"
 #include <string.h>
 /* USER CODE END Includes */
 
@@ -170,9 +171,8 @@ void StartDefaultTask(void const * argument)
   send_message("system start\n");
   HAL_UART_Receive_IT(&huart2, &rx_byte, 1);//打开串口2接收中断，接收到的数据放入rx_byte变量，相当于初始化接收
   NTC_Init();//初始化NTC模块
-  
+  Voltage_Init();//初始化电压检测模块
 
-  
   // 再延迟一下确保消息发送
   osDelay(50);
   
@@ -195,13 +195,16 @@ void StartDefaultTask(void const * argument)
 void StartMonitorTask(void const * argument)
 {
   /* USER CODE BEGIN StartMonitorTask */
+  #if WF5803F_Enable
   float temperature;
   float pressure;
-  
+  #endif
   // 等待DefaultTask完成初始化和发送启动消息
   osDelay(100);
   
   NTC_StartDMA();//启动NTC的ADC DMA转换
+  osDelay(10); // 等待第一次ADC转换完成
+  
   /* Infinite loop */
   for(;;)
   { 
@@ -221,6 +224,7 @@ void StartMonitorTask(void const * argument)
     #if WF5803F_Enable
     send_message("{\"type\":\"data\",\"sensor\":\"WF5803F\",\"temp\":%.2f,\"pressure\":%.2f}\n", temperature, pressure);
     #endif
+    
     NTC_StartDMA();//数据利用完毕重新启动DMA转换
     //绝对时间控制延迟
     osDelay(100);
@@ -240,8 +244,14 @@ void StartvoltageWarningtask(void const * argument)
   /* USER CODE BEGIN StartvoltageWarningtask */
   /* Infinite loop */
   for(;;)
-  {
-    osDelay(1);
+  { 
+    Voltage_StartDMA();//启动电压检测的ADC DMA转换
+    osDelay(1); // 等待ADC转换完成（1ms足够，实际只需约100μs）
+    
+    Voltage_Calculate(&Voltage_DataBuffer);//计算电源电压
+    Voltage_info_send(&Voltage_DataBuffer);//发送电源电压信息
+
+    osDelay(600000);//每10分钟检查一次电压
   }
   /* USER CODE END StartvoltageWarningtask */
 }

@@ -47,6 +47,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
     Core/Src/WF5803.c
     Core/Src/NTC.c
+    Core/Src/V_Detect.c
 )
 
 # Add include paths

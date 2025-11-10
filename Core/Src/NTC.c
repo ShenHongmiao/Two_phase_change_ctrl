@@ -1,5 +1,6 @@
 #include "NTC.h"
 #include "dma.h"
+#include "V_Detect.h"  // 引入电压检测模块头文件
 
 // DMA 缓冲区存储ADC转换结果
 static uint16_t ADC_DMA_Buffer[ADC_DMA_BUFFER_SIZE] = {0};
@@ -113,17 +114,20 @@ void NTC_Calculate(NTC_Data_t *ntc_data)
  * @brief  ADC 转换完成回调函数
  * @param  hadc  ADC 句柄
  * @note   DMA转换完成后自动调用，将ADC值存入数据缓冲区
+ *         处理 ADC1(NTC) 和 ADC2(电压检测)
  */
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 {
     if (hadc->Instance == ADC1)
     {
-        // 存储两个通道的ADC值到数据缓冲区
+        // NTC模块：存储两个通道的ADC值到数据缓冲区
         NTC_DataBuffer.adc_value_ch0 = ADC_DMA_Buffer[0];
         NTC_DataBuffer.adc_value_ch1 = ADC_DMA_Buffer[1];
     }
-    if(hadc->Instance == ADC2)
+    else if (hadc->Instance == ADC2)
     {
-        // 可扩展其他ADC的处理逻辑
+        // 电压检测模块：调用外部函数获取ADC缓冲区并存储
+        extern uint16_t* Voltage_GetDMABuffer(void);
+        Voltage_DataBuffer.adc_value = *Voltage_GetDMABuffer();
     }
 }
