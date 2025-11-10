@@ -151,6 +151,11 @@ void MX_FREERTOS_Init(void) {
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
+  // 其他任务创建后立即挂起，等待初始化完成
+  osThreadSuspend(MonitorTaskHandle);
+  osThreadSuspend(VoltageWarningHandle);
+  osThreadSuspend(Receive_Target_Handle);
+  osThreadSuspend(Ctrl_taskHandle);
   /* USER CODE END RTOS_THREADS */
 
 }
@@ -168,7 +173,7 @@ void StartDefaultTask(void const * argument)
   // 初始化外设
   osDelay(10); // 确保系统稳定
   // 发送启动消息（使用非阻塞方式，但此时已经没有竞争）
-  send_message("system start\n");
+  send_message("system start\n"); // 发送时间: ~1.13ms @115200
   HAL_UART_Receive_IT(&huart2, &rx_byte, 1);//打开串口2接收中断，接收到的数据放入rx_byte变量，相当于初始化接收
   NTC_Init();//初始化NTC模块
   Voltage_Init();//初始化电压检测模块
@@ -178,7 +183,14 @@ void StartDefaultTask(void const * argument)
   
   /* Infinite loop */
   for(;;)
-  { //删除自己CMSIS_V1接口
+  { 
+    // 恢复其他任务
+    osThreadResume(MonitorTaskHandle);
+    osThreadResume(VoltageWarningHandle);
+    osThreadResume(Receive_Target_Handle);
+    osThreadResume(Ctrl_taskHandle);
+    
+    //删除自己CMSIS_V1接口
     osThreadTerminate(NULL);
     osDelay(1);
   }
@@ -199,35 +211,34 @@ void StartMonitorTask(void const * argument)
   float temperature;
   float pressure;
   #endif
-  // 等待DefaultTask完成初始化和发送启动消息
-  osDelay(100);
   
-  NTC_StartDMA();//启动NTC的ADC DMA转换
-  osDelay(10); // 等待第一次ADC转换完成
+  NTC_StartDMA();
+  osDelay(10);
   
   /* Infinite loop */
   for(;;)
   { 
     #if WF5803F_Enable
-    WF5803F_GetData(&temperature, &pressure);//读取WF5803F传感器数据
+    WF5803F_GetData(&temperature, &pressure);
     #endif
 
     NTC_Calculate(&NTC_DataBuffer);//计算温度
     //判断宏定义来发送信息
     #if NTC_CHANNEL0_ENABLE
-    send_message("{\"type\":\"data\",\"sensor\":\"NTC_0\",\"temp\":%.2f}\n", NTC_DataBuffer.temperature_ch0);
+    send_message("{\"type\":\"data\",\"sensor\":\"NTC_0\",\"temp\":%.2f}\n", NTC_DataBuffer.temperature_ch0); // 发送时间: ~4.34ms @115200
     #endif
     #if NTC_CHANNEL1_ENABLE
-    send_message("{\"type\":\"data\",\"sensor\":\"NTC_1\",\"temp\":%.2f}\n", NTC_DataBuffer.temperature_ch1);
+    send_message("{\"type\":\"data\",\"sensor\":\"NTC_1\",\"temp\":%.2f}\n", NTC_DataBuffer.temperature_ch1); // 发送时间: ~4.34ms @115200
     #endif
     //发送WF5803F数据
     #if WF5803F_Enable
-    send_message("{\"type\":\"data\",\"sensor\":\"WF5803F\",\"temp\":%.2f,\"pressure\":%.2f}\n", temperature, pressure);
+    send_message("{\"type\":\"data\",\"sensor\":\"WF5803F\",\"temp\":%.2f,\"pressure\":%.2f}\n", temperature, pressure); // 发送时间: ~5.90ms @115200
     #endif
     
     NTC_StartDMA();//数据利用完毕重新启动DMA转换
-    //绝对时间控制延迟
-    osDelay(100);
+    //这里的会导致下次发送的数据是旧数据，在控制频率较高且温度变化慢的情况下影响不大，但如果需要更精确的数据建议改为信号量或事件标志控制
+    //延迟时间注意要大于ADC转换时间（大概 100ns）+消息发送时间，否则会出现发送信息重叠的问题，以及ADC数据错乱的问题
+    osDelay(5);
   }
   /* USER CODE END StartMonitorTask */
 }
@@ -249,7 +260,7 @@ void StartvoltageWarningtask(void const * argument)
     osDelay(1); // 等待ADC转换完成（1ms足够，实际只需约100μs）
     
     Voltage_Calculate(&Voltage_DataBuffer);//计算电源电压
-    Voltage_info_send(&Voltage_DataBuffer);//发送电源电压信息
+    Voltage_info_send(&Voltage_DataBuffer);//发送电源电压信息 发送时间: ~6.34ms(正常) 或 ~6.08ms(低压) @115200
 
     osDelay(600000);//每10分钟检查一次电压
   }
