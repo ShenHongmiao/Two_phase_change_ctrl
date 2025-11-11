@@ -40,6 +40,9 @@ extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN Private defines */
+//数据帧格式定义
+#define FRAME_HEAD 0xDE
+#define FRAME_TAIL 0xED
 //0x0...为向上位机发送数据的命令ID
 #define CMD_NTC            0x01
 #define CMD_WF5803F        0x02
