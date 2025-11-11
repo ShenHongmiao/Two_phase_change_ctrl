@@ -227,7 +227,7 @@ void StartMonitorTask(void const * argument)
 
     NTC_Calculate(&NTC_DataBuffer);//计算温度
 
-    //打包数据
+    //打包数据（会根据宏定义来自行打包该打包的数据）
     pack_data(&packet_data);
     //判断宏定义来发送信息
     #if NTC_CHANNEL0_ENABLE
