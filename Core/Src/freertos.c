@@ -226,16 +226,19 @@ void StartMonitorTask(void const * argument)
     #endif
 
     NTC_Calculate(&NTC_DataBuffer);//计算温度
+
+    //打包数据
+    pack_data(&packet_data);
     //判断宏定义来发送信息
     #if NTC_CHANNEL0_ENABLE
-    send_message(CMD_NTC, "CH0:%.2f\n", NTC_DataBuffer.temperature_ch0); // 发送时间: ~1.30ms @115200 (15字节)
+    send_message(CMD_NTC, "CH0:%.2f\n", packet_data.ntc_temp_ch0); // 发送时间: ~1.30ms @115200 (15字节)
     #endif
     #if NTC_CHANNEL1_ENABLE
-    send_message(CMD_NTC, "CH1:%.2f\n", NTC_DataBuffer.temperature_ch1); // 发送时间: ~1.30ms @115200 (15字节)
+    send_message(CMD_NTC, "CH1:%.2f\n", packet_data.ntc_temp_ch1); // 发送时间: ~1.30ms @115200 (15字节)
     #endif
     //发送WF5803F数据
     #if WF5803F_Enable
-    send_message(CMD_WF5803F, "T:%.2f,P:%.2f\n", WF5803F_DataBuffer.temperature, WF5803F_DataBuffer.pressure); // 发送时间: ~2.00ms @115200 (23字节)
+    send_message(CMD_WF5803F, "T:%.2f,P:%.2f\n", packet_data.wf_temperature, packet_data.wf_pressure); // 发送时间: ~2.00ms @115200 (23字节)
     #endif
     
     //延迟时间注意要大于ADC转换时间（大概 100ns）+消息发送时间，否则会出现发送信息重叠的问题，以及ADC数据错乱的问题
