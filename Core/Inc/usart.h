@@ -40,10 +40,11 @@ extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN Private defines */
-#define CMD_NTC         0x01
-#define CMD_WF5803F     0x02
-#define CMD_VOLTAGE     0x03
-#define CMD_TEXT_INFO   0xFF  // 通用信息
+#define CMD_NTC            0x01
+#define CMD_WF5803F        0x02
+#define CMD_VOLTAGE        0x03
+#define CMD_PID_VALUE      0x04
+#define CMD_TEXT_INFO      0xFF  // 通用信息
 /* USER CODE END Private defines */
 
 void MX_USART1_UART_Init(void);

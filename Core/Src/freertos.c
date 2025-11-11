@@ -29,6 +29,7 @@
 #include "usart.h"
 #include "NTC.h"
 #include "V_Detect.h"
+#include "data_packet.h"
 #include <string.h>
 /* USER CODE END Includes */
 
@@ -175,6 +176,10 @@ void StartDefaultTask(void const * argument)
   // 发送启动消息（使用非阻塞方式，但此时已经没有竞争）
   send_message(CMD_TEXT_INFO, "system start\n"); // 发送时间: ~1.56ms @115200 (18字节)
   HAL_UART_Receive_IT(&huart2, &rx_byte, 1);//打开串口2接收中断，接收到的数据放入rx_byte变量，相当于初始化接收
+
+  #if WF5803F_Enable
+  WF5803F_Init();//初始化WF5803F模块
+  #endif
   NTC_Init();//初始化NTC模块
   Voltage_Init();//初始化电压检测模块
 
@@ -207,19 +212,17 @@ void StartDefaultTask(void const * argument)
 void StartMonitorTask(void const * argument)
 {
   /* USER CODE BEGIN StartMonitorTask */
-  #if WF5803F_Enable
-  float temperature;
-  float pressure;
-  #endif
   
-  NTC_StartDMA();
-  osDelay(10);
   
   /* Infinite loop */
   for(;;)
   { 
+
+    NTC_StartDMA();//数据利用完毕重新启动DMA转换
+    HAL_ADC_PollForConversion(&hadc1, 1); //死等转换完成，确保数据有效(osdelay会打断任务执行逻辑)
     #if WF5803F_Enable
-    WF5803F_GetData(&temperature, &pressure);
+    WF5803F_ReadData(&WF5803F_DataBuffer); // 读取原始数据
+    WF5803F_Calculate(&WF5803F_DataBuffer); // 计算温度和压力
     #endif
 
     NTC_Calculate(&NTC_DataBuffer);//计算温度
@@ -232,11 +235,9 @@ void StartMonitorTask(void const * argument)
     #endif
     //发送WF5803F数据
     #if WF5803F_Enable
-    send_message(CMD_WF5803F, "T:%.2f,P:%.2f\n", temperature, pressure); // 发送时间: ~2.00ms @115200 (23字节)
+    send_message(CMD_WF5803F, "T:%.2f,P:%.2f\n", WF5803F_DataBuffer.temperature, WF5803F_DataBuffer.pressure); // 发送时间: ~2.00ms @115200 (23字节)
     #endif
     
-    NTC_StartDMA();//数据利用完毕重新启动DMA转换
-    //这里的会导致下次发送的数据是旧数据，在控制频率较高且温度变化慢的情况下影响不大，但如果需要更精确的数据建议改为信号量或事件标志控制
     //延迟时间注意要大于ADC转换时间（大概 100ns）+消息发送时间，否则会出现发送信息重叠的问题，以及ADC数据错乱的问题
     osDelay(5);
   }

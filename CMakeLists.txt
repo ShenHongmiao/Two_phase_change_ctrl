@@ -48,6 +48,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     Core/Src/WF5803.c
     Core/Src/NTC.c
     Core/Src/V_Detect.c
+    Core/Src/data_packet.c
 )
 
 # Add include paths

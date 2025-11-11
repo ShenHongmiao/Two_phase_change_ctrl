@@ -4,13 +4,33 @@
 volatile I2C_DMA_Status_t g_i2c_tx_status = I2C_DMA_IDLE;
 volatile I2C_DMA_Status_t g_i2c_rx_status = I2C_DMA_IDLE;
 
-//需要对传感器寄存器0x30写入000b开始转换单次温度转换，001b开始单次气压转换
-//通过读取0x02寄存器的bit0(DRDY)值来判断是否转换完成,1表示完成
-//转换完成后读取温度和气压数据，原始温度数据Temp_out为16位，分为MSB和LSB。地址为0x09~0x0A
-//原始气压数据Press_out为24位，分为MSB、CSB和LSB。地址为0x06~0x08
-/*气压+温度读取*/
-void WF5803F_ReadDate(int16_t* Temp, int32_t* Press)
+// WF5803F 数据缓冲区
+WF5803F_Data_t WF5803F_DataBuffer = {0};
+
+/**
+ * @brief  WF5803F 传感器初始化
+ */
+void WF5803F_Init(void)
 {
+    // 清零数据缓冲区
+    WF5803F_DataBuffer.temperature = 0.0f;
+    WF5803F_DataBuffer.pressure = 0.0f;
+    WF5803F_DataBuffer.raw_temp = 0;
+    WF5803F_DataBuffer.raw_pressure = 0;
+
+}
+
+/**
+ * @brief  读取 WF5803F 原始数据
+ * @param  wf5803f_data  指向 WF5803F_Data_t 结构体的指针
+ * @note   读取温度和气压的原始值，存储到结构体的 raw_temp 和 raw_pressure 字段
+ */
+void WF5803F_ReadData(WF5803F_Data_t *wf5803f_data)
+{
+    if (wf5803f_data == NULL) {
+        return;
+    }
+    
     static uint8_t cmd = 0x0A;                    // 单次气压+温度转换
     static uint8_t status;
     static uint8_t buf[5];
@@ -82,8 +102,9 @@ void WF5803F_ReadDate(int16_t* Temp, int32_t* Press)
         return;
     }
 
-    *Press = (int32_t)((uint32_t)buf[0] << 16 | (uint32_t)buf[1] << 8 | buf[2]); // 24bit
-    *Temp  = (int16_t)((uint16_t)buf[3] << 8 | buf[4]);                           // 16bit
+    // 存储原始数据到结构体
+    wf5803f_data->raw_pressure = (int32_t)((uint32_t)buf[0] << 16 | (uint32_t)buf[1] << 8 | buf[2]); // 24bit
+    wf5803f_data->raw_temp = (int16_t)((uint16_t)buf[3] << 8 | buf[4]);                                // 16bit
 }
 
 /**
@@ -107,6 +128,11 @@ float compute_pressure_WF5803F_2BAR_fromInt(int32_t rawData) {
     return 180.0f/0.81f*(factor-0.1f)+30.0f;
 }
 
+/**
+ * @brief  将 16位有符号整数转换为温度
+ * @param  rawData  16位整型数，存放传感器的温度原始数据
+ * @return 温度值，单位 ℃
+ */
 float compute_temperature_WF5803F_fromInt(int16_t rawData) {
     // 如果最高位 (bit15) 为1，则需要做符号扩展
     if (rawData & 0x00008000) {   // 如果bit15是1，表示负数
@@ -117,21 +143,19 @@ float compute_temperature_WF5803F_fromInt(int16_t rawData) {
 }
 
 /**
- * @brief  直接获取计算后的温度和气压值
- * @param  temperature  指向float变量的指针，用于存储计算后的温度值(单位: ℃)
- * @param  pressure     指向float变量的指针，用于存储计算后的气压值(单位: kPa)
+ * @brief  计算 WF5803F 的温度和压力值
+ * @param  wf5803f_data  指向 WF5803F_Data_t 结构体的指针
+ * @note   从结构体中读取原始数据，计算后更新温度和压力字段
  */
-void WF5803F_GetData(float* temperature, float* pressure)
+void WF5803F_Calculate(WF5803F_Data_t *wf5803f_data)
 {
-    int16_t rawTemp;
-    int32_t rawPress;
-    
-    // 读取原始数据
-    WF5803F_ReadDate(&rawTemp, &rawPress);
+    if (wf5803f_data == NULL) {
+        return;
+    }
     
     // 转换为实际物理值
-    *temperature = compute_temperature_WF5803F_fromInt(rawTemp);
-    *pressure = compute_pressure_WF5803F_2BAR_fromInt(rawPress);
+    wf5803f_data->temperature = compute_temperature_WF5803F_fromInt(wf5803f_data->raw_temp);
+    wf5803f_data->pressure = compute_pressure_WF5803F_2BAR_fromInt(wf5803f_data->raw_pressure);
 }
 
 

@@ -1,3 +1,6 @@
+#ifndef __NTC_H__
+#define __NTC_H__
+
 #include "cmsis_os.h"
 #include "adc.h"
 #include "math.h"
@@ -35,3 +38,5 @@ extern NTC_Data_t NTC_DataBuffer;
 void NTC_Init(void);
 void NTC_StartDMA(void);
 void NTC_Calculate(NTC_Data_t *ntc_data);
+
+#endif // __NTC_H__
