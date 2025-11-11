@@ -89,9 +89,9 @@ void Voltage_info_send(Voltage_Data_t *voltage_data)
         return;
     }
     
-    send_message("{\"type\":\"data\",\"sensor\":\"Voltage_Detect\",\"voltage\":%.2f,\"status\":%s}\n",
+    send_message(CMD_VOLTAGE, "V:%.2f,%s\n",
                  voltage_data->voltage,
-                 voltage_data->is_normal ? "normal" : "low");
+                 voltage_data->is_normal ? "OK" : "LOW");
 }
 
 // 注意：HAL_ADC_ConvCpltCallback 回调函数已在 NTC.c 中统一定义，处理 ADC1 和 ADC2

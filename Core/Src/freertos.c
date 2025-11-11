@@ -173,7 +173,7 @@ void StartDefaultTask(void const * argument)
   // 初始化外设
   osDelay(10); // 确保系统稳定
   // 发送启动消息（使用非阻塞方式，但此时已经没有竞争）
-  send_message("system start\n"); // 发送时间: ~1.13ms @115200
+  send_message(CMD_TEXT_INFO, "system start\n"); // 发送时间: ~1.13ms @115200
   HAL_UART_Receive_IT(&huart2, &rx_byte, 1);//打开串口2接收中断，接收到的数据放入rx_byte变量，相当于初始化接收
   NTC_Init();//初始化NTC模块
   Voltage_Init();//初始化电压检测模块
@@ -225,14 +225,14 @@ void StartMonitorTask(void const * argument)
     NTC_Calculate(&NTC_DataBuffer);//计算温度
     //判断宏定义来发送信息
     #if NTC_CHANNEL0_ENABLE
-    send_message("{\"type\":\"data\",\"sensor\":\"NTC_0\",\"temp\":%.2f}\n", NTC_DataBuffer.temperature_ch0); // 发送时间: ~4.34ms @115200
+    send_message(CMD_NTC, "CH0:%.2f\n", NTC_DataBuffer.temperature_ch0); // 发送时间: ~4.34ms @115200
     #endif
     #if NTC_CHANNEL1_ENABLE
-    send_message("{\"type\":\"data\",\"sensor\":\"NTC_1\",\"temp\":%.2f}\n", NTC_DataBuffer.temperature_ch1); // 发送时间: ~4.34ms @115200
+    send_message(CMD_NTC, "CH1:%.2f\n", NTC_DataBuffer.temperature_ch1); // 发送时间: ~4.34ms @115200
     #endif
     //发送WF5803F数据
     #if WF5803F_Enable
-    send_message("{\"type\":\"data\",\"sensor\":\"WF5803F\",\"temp\":%.2f,\"pressure\":%.2f}\n", temperature, pressure); // 发送时间: ~5.90ms @115200
+    send_message(CMD_WF5803F, "T:%.2f,P:%.2f\n", temperature, pressure); // 发送时间: ~5.90ms @115200
     #endif
     
     NTC_StartDMA();//数据利用完毕重新启动DMA转换
@@ -262,7 +262,7 @@ void StartvoltageWarningtask(void const * argument)
     Voltage_Calculate(&Voltage_DataBuffer);//计算电源电压
     Voltage_info_send(&Voltage_DataBuffer);//发送电源电压信息 发送时间: ~6.34ms(正常) 或 ~6.08ms(低压) @115200
 
-    osDelay(600000);//每10分钟检查一次电压
+    osDelay(1000);//每10分钟检查一次电压
   }
   /* USER CODE END StartvoltageWarningtask */
 }

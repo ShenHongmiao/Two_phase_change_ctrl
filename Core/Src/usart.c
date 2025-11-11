@@ -39,6 +39,7 @@ static volatile uint8_t active_buf_index = 0;
 static osMutexId uart_tx_mutex = NULL;
 
 uint8_t rx_byte; // 用于接收单个字节
+
 /* USER CODE END 0 */
 
 UART_HandleTypeDef huart1;
@@ -280,13 +281,15 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
 /* USER CODE BEGIN 1 */
 /**
  * @brief 发送格式化消息，串口2，使用DMA非阻塞方式，双缓冲
+ * @param cmd_id 命令ID，用于添加数据类型前缀
  * @param format 消息格式
  * @param ...   可变参数
  */
-void send_message(const char *format, ...)
+void send_message(uint8_t cmd_id, const char *format, ...)
 {
     va_list args;
     int len;
+    int prefix_len;
     
     // 开始处理可变参数
     va_start(args, format);
@@ -309,18 +312,26 @@ void send_message(const char *format, ...)
     // 清除空闲缓冲区,防止数据残留
     memset(idle_buffer, 0, UART_TX_BUFFER_SIZE);
     
-    // 将格式化字符串写入空闲缓冲区
-    len = vsnprintf(idle_buffer, UART_TX_BUFFER_SIZE, format, args);
-    va_end(args);
-    
-    // 验证长度有效性
-    if (len <= 0 || len >= UART_TX_BUFFER_SIZE) {
+    // 添加前缀 [ID]
+    prefix_len = snprintf(idle_buffer, UART_TX_BUFFER_SIZE, "[%02X]", cmd_id);
+    if (prefix_len <= 0 || prefix_len >= UART_TX_BUFFER_SIZE) {
+        va_end(args);
         osMutexRelease(uart_tx_mutex);
         return;
     }
     
-    // 保存空闲缓冲区的数据长度
-    idle_buf_len = len;
+    // 将格式化字符串写入空闲缓冲区（在前缀之后）
+    len = vsnprintf(idle_buffer + prefix_len, UART_TX_BUFFER_SIZE - prefix_len, format, args);
+    va_end(args);
+    
+    // 验证长度有效性
+    if (len <= 0 || (prefix_len + len) >= UART_TX_BUFFER_SIZE) {
+        osMutexRelease(uart_tx_mutex);
+        return;
+    }
+    
+    // 保存空闲缓冲区的数据长度（前缀 + 数据）
+    idle_buf_len = prefix_len + len;
     
     // 检查DMA是否空闲
     if (is_tx_busy == 0) {

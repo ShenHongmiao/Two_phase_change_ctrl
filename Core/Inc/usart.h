@@ -40,7 +40,10 @@ extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN Private defines */
-
+#define CMD_NTC         0x01
+#define CMD_WF5803F     0x02
+#define CMD_VOLTAGE     0x03
+#define CMD_TEXT_INFO   0xFF  // 通用信息
 /* USER CODE END Private defines */
 
 void MX_USART1_UART_Init(void);
@@ -51,7 +54,7 @@ extern osMessageQId usart2_rx_queueHandle;
 extern osMessageQId usart1_rx_queueHandle;
 extern uint8_t rx_byte;
 
-void send_message(const char *format, ...);
+void send_message(uint8_t cmd_id, const char *format, ...);
 void send_message_direct(const char *format, ...);
 /* USER CODE END Prototypes */
 
