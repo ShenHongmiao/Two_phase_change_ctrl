@@ -174,7 +174,7 @@ void StartDefaultTask(void const * argument)
   // 初始化外设
   osDelay(10); // 确保系统稳定
   // 发送启动消息（使用非阻塞方式，但此时已经没有竞争）
-  send_message(CMD_TEXT_INFO, "system start\n"); // 发送时间: ~1.56ms @115200 (18字节)
+  send_ready(CMD_TEXT_INFO, "system start\n"); // 发送时间: ~1.56ms @115200 (18字节)
   HAL_UART_Receive_IT(&huart2, &rx_byte, 1);//打开串口2接收中断，接收到的数据放入rx_byte变量，相当于初始化接收
 
   #if WF5803F_Enable
@@ -231,14 +231,14 @@ void StartMonitorTask(void const * argument)
     pack_data(&packet_data);
     //判断宏定义来发送信息
     #if NTC_CHANNEL0_ENABLE
-    send_message(CMD_NTC, "CH0:%.2f\n", packet_data.ntc_temp_ch0); // 发送时间: ~1.30ms @115200 (15字节)
+    send_ready(CMD_NTC, "CH0:%.2f\n", packet_data.ntc_temp_ch0); // 发送时间: ~1.30ms @115200 (15字节)
     #endif
     #if NTC_CHANNEL1_ENABLE
-    send_message(CMD_NTC, "CH1:%.2f\n", packet_data.ntc_temp_ch1); // 发送时间: ~1.30ms @115200 (15字节)
+    send_ready(CMD_NTC, "CH1:%.2f\n", packet_data.ntc_temp_ch1); // 发送时间: ~1.30ms @115200 (15字节)
     #endif
     //发送WF5803F数据
     #if WF5803F_Enable
-    send_message(CMD_WF5803F, "T:%.2f,P:%.2f\n", packet_data.wf_temperature, packet_data.wf_pressure); // 发送时间: ~2.00ms @115200 (23字节)
+    send_ready(CMD_WF5803F, "T:%.2f,P:%.2f\n", packet_data.wf_temperature, packet_data.wf_pressure); // 发送时间: ~2.00ms @115200 (23字节)
     #endif
     
     //延迟时间注意要大于ADC转换时间（大概 100ns）+消息发送时间，否则会出现发送信息重叠的问题，以及ADC数据错乱的问题
@@ -265,7 +265,7 @@ void StartvoltageWarningtask(void const * argument)
     
     Voltage_Calculate(&Voltage_DataBuffer);//计算电源电压
     Voltage_info_send(&Voltage_DataBuffer);//发送电源电压信息: ~1.30ms(OK) 或 ~1.39ms(LOW) @115200
-
+    send_message("Voltage Check Done\n");//发送电源电压检查完成消息，约1.20ms @115200
     osDelay(600000);//每10分钟检查一次电压
   }
   /* USER CODE END StartvoltageWarningtask */

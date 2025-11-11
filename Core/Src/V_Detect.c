@@ -89,7 +89,7 @@ void Voltage_info_send(Voltage_Data_t *voltage_data)
         return;
     }
     
-    send_message(CMD_VOLTAGE, "V:%.2f,%s\n",
+    send_ready(CMD_VOLTAGE, "V:%.2f,%s\n",
                  voltage_data->voltage,
                  voltage_data->is_normal ? "OK" : "LOW");
 }
