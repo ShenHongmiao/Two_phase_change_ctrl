@@ -69,7 +69,7 @@
 
 采用**简洁前缀协议**，相比 JSON 格式节省约 70% 带宽：
 
-```
+```text
 [ID]数据内容\n
 ```
 
@@ -104,7 +104,7 @@
 
 ### 任务流程图
 
-```
+```text
 [DefaultTask] 初始化
     ├── 初始化外设 (NTC, Voltage, UART)
     ├── 发送系统启动消息
@@ -128,7 +128,7 @@
 
 ## 项目结构
 
-```
+```text
 Two_phase_change_ctrl/
 ├── Core/
 │   ├── Inc/
@@ -173,14 +173,14 @@ cmake --build build/Debug
 
 项目支持多种烧录方式：
 
-**方法 1: OpenOCD + CMSIS-DAP**
+#### 方法 1: OpenOCD + CMSIS-DAP
 
 ```bash
 openocd -f interface/cmsis-dap.cfg -f target/stm32f4x.cfg \
   -c "program build/Debug/Two_phase_change_ctrl.elf verify reset exit"
 ```
 
-**方法 2: STM32CubeProgrammer**
+#### 方法 2: STM32CubeProgrammer
 
 ```bash
 STM32_Programmer_CLI -c port=SWD -d build/Debug/Two_phase_change_ctrl.elf -rst
@@ -190,7 +190,7 @@ STM32_Programmer_CLI -c port=SWD -d build/Debug/Two_phase_change_ctrl.elf -rst
 
 ### 启动输出
 
-```
+```text
 [FF]system start
 [01]CH0:25.36
 [02]T:25.50,P:101.32
@@ -220,13 +220,16 @@ STM32_Programmer_CLI -c port=SWD -d build/Debug/Two_phase_change_ctrl.elf -rst
   - [ ] PID 温度控制
   - [ ] 压力-温度联合控制
   - [ ] 相变点识别与稳定
+
 - [ ] **上位机指令接收** (Receive_Target)
   - [ ] 目标温度/压力设置
   - [ ] 控制参数调整
   - [ ] 系统状态查询
+
 - [ ] **数据记录与存储**
   - [ ] Flash 存储历史数据
   - [ ] SD 卡日志记录
+
 - [ ] **安全保护机制**
   - [ ] 超温保护
   - [ ] 超压保护
