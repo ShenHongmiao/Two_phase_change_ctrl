@@ -348,8 +348,64 @@ void send_message(const char *format, ...)
 }
 
 /**
- * @brief 发送格式化消息，串口2，使用DMA非阻塞方式，双缓冲，带命令ID前缀
- * @param cmd_id 命令ID，用于添加数据类型前缀
+ * @brief 发送二进制数据,串口2,使用DMA非阻塞方式,双缓冲
+ * @param data 要发送的数据指针(可以是任意类型的指针)
+ * @param len  数据长度(字节数), 不超过UART_TX_BUFFER_SIZE
+ */
+void send_binary_data(const void *data, size_t len)
+{
+    // 验证参数
+  if (data == NULL || len == 0 || len > UART_TX_BUFFER_SIZE) {
+    return;
+  }
+    
+    // 首次调用时创建互斥锁
+    if (uart_tx_mutex == NULL) {
+        osMutexDef(uart_tx_mutex);
+        uart_tx_mutex = osMutexCreate(osMutex(uart_tx_mutex));
+    }
+    
+    // 尝试获取互斥锁,超时为0立即返回,获取失败则丢弃本次发送
+  if (osMutexWait(uart_tx_mutex, 0) != osOK) {
+    return;
+  }
+    
+    // 确定空闲缓冲区(与当前活动缓冲区相反)
+    char *idle_buffer = (active_buf_index == 0) ? buffer_b : buffer_a;
+    
+    // 复制二进制数据到空闲缓冲区
+    memcpy(idle_buffer, data, len);
+    
+    // 保存空闲缓冲区的数据长度
+    idle_buf_len = len;
+    
+    // 检查DMA是否空闲
+    if (is_tx_busy == 0) {
+        // DMA空闲,切换缓冲区(空闲区变为活动区)
+        active_buf_index = (active_buf_index == 0) ? 1 : 0;
+        char *active_buffer = (active_buf_index == 0) ? buffer_a : buffer_b;
+        
+        // 获取待发送长度并清零空闲区长度
+        uint16_t send_len = idle_buf_len;
+        idle_buf_len = 0;
+        
+        // 设置DMA忙碌标志
+        is_tx_busy = 1;
+        
+        // 释放互斥锁
+        osMutexRelease(uart_tx_mutex);
+        
+        // 启动DMA发送
+        HAL_UART_Transmit_DMA(&huart2, (uint8_t*)active_buffer, send_len);
+    } else {
+        // DMA忙碌,数据已写入空闲区,等待回调函数处理
+        osMutexRelease(uart_tx_mutex);
+    }
+}
+
+/**
+ * @brief 发送格式化消息,串口2,使用DMA非阻塞方式,双缓冲,带命令ID前缀
+ * @param cmd_id 命令ID,用于添加数据类型前缀
  * @param format 消息格式
  * @param ...   可变参数
  */

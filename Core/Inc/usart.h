@@ -63,6 +63,7 @@ extern uint8_t rx_byte;
 void send_message(const char *format, ...);
 void send_ready(uint8_t cmd_id, const char *format, ...);
 void send_message_direct(const char *format, ...);
+void send_binary_data(const void *data, size_t len);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus
