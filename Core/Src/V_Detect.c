@@ -82,16 +82,16 @@ void Voltage_Calculate(Voltage_Data_t *voltage_data)
 }
 
 
-void Voltage_info_send(Voltage_Data_t *voltage_data)
-{
-    if (voltage_data == NULL)
-    {
-        return;
-    }
+// void Voltage_info_send(Voltage_Data_t *voltage_data)
+// {
+//     if (voltage_data == NULL)
+//     {
+//         return;
+//     }
     
-    send_ready(CMD_VOLTAGE, "V:%.2f,%s\n",
-                 voltage_data->voltage,
-                 voltage_data->is_normal ? "OK" : "LOW");
-}
+//     send_ready(CMD_VOLTAGE, "V:%.2f,%s\n",
+//                  voltage_data->voltage,
+//                  voltage_data->is_normal ? "OK" : "LOW");
+// }
 
 // 注意：HAL_ADC_ConvCpltCallback 回调函数已在 NTC.c 中统一定义，处理 ADC1 和 ADC2

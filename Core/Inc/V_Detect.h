@@ -39,7 +39,7 @@ extern Voltage_Data_t Voltage_DataBuffer;
 void Voltage_Init(void);
 void Voltage_StartDMA(void);
 void Voltage_Calculate(Voltage_Data_t *voltage_data);
-void Voltage_info_send(Voltage_Data_t *voltage_data);
+// void Voltage_info_send(Voltage_Data_t *voltage_data);
 uint16_t* Voltage_GetDMABuffer(void);  // 供回调函数使用
 
 #endif // __V_DETECT_H__

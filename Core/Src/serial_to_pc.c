@@ -1,6 +1,6 @@
 #include "serial_to_pc.h"
-#include "usart.h"
-#include <string.h>
+#include <stdarg.h>
+#include <stdio.h>
 
 uint8_t crc8_calculate(const uint8_t *data, uint16_t length) {
     uint8_t crc = 0x00;
@@ -26,11 +26,15 @@ uint16_t get_packet_data_length(uint8_t cmd_id, PacketData_t *data)
         length += sizeof(data->ntc_temp_ch1);
 #endif
         break;
-    case CMD_WF5803F:
 #if WF5803F_Enable
+    case CMD_WF5803F:
         length += sizeof(data->wf_temperature);
         length += sizeof(data->wf_pressure);
+        break;
 #endif
+    case CMD_VOLTAGE:
+        length += sizeof(data->voltage);
+        length += sizeof(uint8_t); // 状态字节
         break;
     default:
         break;
@@ -38,15 +42,17 @@ uint16_t get_packet_data_length(uint8_t cmd_id, PacketData_t *data)
     return length;
 }
 
-
-void send2pc(uint8_t cmd_id, PacketData_t *data)
+/**
+ * @brief 发送数据到上位机,带命令ID判断
+ * @param cmd_id 命令ID
+ * @param data   数据指针
+ */
+ //数据结构：帧头(1字节)+命令ID(1字节)+数据长度(1字节)+数据体(n字节)+CRC8(1字节)+帧尾(1字节)
+ //帧头: 0xDE，帧尾: 0xED，CRC8采用常见的x^8 + x^2 + x + 1多项式
+void send2pc(uint8_t cmd_id, PacketData_t *data,const char *format, ...)
 {
-    uint8_t frame[256];  // 根据需要调整最大长度
+    uint8_t frame[256];
     uint16_t index = 0;
-
-    if (data == NULL) {
-        return;
-    }
 
     // 帧头
     frame[index++] = FRAME_HEAD;
@@ -54,50 +60,104 @@ void send2pc(uint8_t cmd_id, PacketData_t *data)
     // 命令ID
     frame[index++] = cmd_id;
 
-    // 数据长度
-    uint16_t data_len = get_packet_data_length(cmd_id, data);
-    if (data_len > UINT8_MAX) {
-        return;
-    }
-    size_t remaining = sizeof(frame) - index;
-    if (((size_t)data_len + 3) > remaining) { // 预留长度字节+CRC+帧尾
-        return;
-    }
+    uint16_t data_len = 0;
 
-    frame[index++] = (uint8_t)data_len;
+    if (cmd_id == CMD_TEXT_INFO) {
+        if (format == NULL) {
+            return;
+        }
 
-    uint8_t *payload = &frame[index];
-    uint16_t written = 0;
+        char text_buffer[256];
+        va_list args;
+        va_start(args, format);
+        int text_len = vsnprintf(text_buffer, sizeof(text_buffer), format, args);
+        va_end(args);
 
-    switch (cmd_id) {
-    case CMD_NTC:
+        if (text_len <= 0) {
+            return;
+        }
+
+        if (text_len >= (int)sizeof(text_buffer)) {
+            text_len = (int)strlen(text_buffer);
+        }
+
+        data_len = (uint16_t)text_len;
+
+        if (data_len > UINT8_MAX) {
+            data_len = UINT8_MAX;
+        }
+
+        size_t remaining = sizeof(frame) - index;
+        if (((size_t)data_len + 3) > remaining) {
+            return;
+        }
+
+        frame[index++] = (uint8_t)data_len;
+        memcpy(&frame[index], text_buffer, data_len);
+        index += data_len;
+    } else {
+        if (data == NULL) {
+            return;
+        }
+
+        data_len = get_packet_data_length(cmd_id, data);
+        if (data_len > UINT8_MAX) {
+            return;
+        }
+
+        size_t remaining = sizeof(frame) - index;
+        if (((size_t)data_len + 3) > remaining) {
+            return;
+        }
+
+        frame[index++] = (uint8_t)data_len;
+
+        uint8_t *payload = &frame[index];
+        uint16_t written = 0;
+
+        switch (cmd_id) {
+        case CMD_NTC:
 #if NTC_CHANNEL0_ENABLE
-        memcpy(payload + written, &data->ntc_temp_ch0, sizeof(data->ntc_temp_ch0));
-        written += sizeof(data->ntc_temp_ch0);
+            memcpy(payload + written, &data->ntc_temp_ch0, sizeof(data->ntc_temp_ch0));
+            written += sizeof(data->ntc_temp_ch0);
 #endif
 #if NTC_CHANNEL1_ENABLE
-        memcpy(payload + written, &data->ntc_temp_ch1, sizeof(data->ntc_temp_ch1));
-        written += sizeof(data->ntc_temp_ch1);
+            memcpy(payload + written, &data->ntc_temp_ch1, sizeof(data->ntc_temp_ch1));
+            written += sizeof(data->ntc_temp_ch1);
 #endif
-        break;
-    
-#if WF5803F_Enable                  
-    case CMD_WF5803F:  
-        memcpy(payload + written, &data->wf_temperature, sizeof(data->wf_temperature));
-        written += sizeof(data->wf_temperature);
-        memcpy(payload + written, &data->wf_pressure, sizeof(data->wf_pressure));
-        written += sizeof(data->wf_pressure);
-        break;
+            break;
+
+#if WF5803F_Enable
+        case CMD_WF5803F:
+            memcpy(payload + written, &data->wf_temperature, sizeof(data->wf_temperature));
+            written += sizeof(data->wf_temperature);
+            memcpy(payload + written, &data->wf_pressure, sizeof(data->wf_pressure));
+            written += sizeof(data->wf_pressure);
+            break;
 #endif
-    default:
-        break;
-    }
 
-    if (written != data_len) {
-        return;
-    }
 
-    index += written;
+
+
+
+        case CMD_VOLTAGE: {
+            int16_t voltage_scaled = (int16_t)(Voltage_DataBuffer.voltage * 100.0f);
+            memcpy(payload + written, &voltage_scaled, sizeof(voltage_scaled));
+            written += sizeof(voltage_scaled);
+            uint8_t status = Voltage_DataBuffer.is_normal ? 0x01 : 0xFF;
+            payload[written++] = status;
+            break;
+        }
+        default:
+            break;
+        }
+
+        if (written != data_len) {
+            return;
+        }
+
+        index += written;
+    }
 
     // CRC8 校验（从帧头到数据体结束）
     uint8_t crc = crc8_calculate(frame, index);
@@ -106,6 +166,5 @@ void send2pc(uint8_t cmd_id, PacketData_t *data)
     // 帧尾
     frame[index++] = FRAME_TAIL;
 
-    // 发送数据帧
     send_binary_data(frame, index);
 }

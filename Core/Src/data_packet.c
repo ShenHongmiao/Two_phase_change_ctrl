@@ -1,5 +1,5 @@
 #include "data_packet.h"
-#include <string.h>
+
 
 
 PacketData_t packet_data={0};
@@ -14,6 +14,7 @@ void pack_data(PacketData_t *packet)
 {
     pack_data_reset(packet);
 
+    packet->voltage = (int16_t)(Voltage_DataBuffer.voltage * 100);
 #if NTC_CHANNEL0_ENABLE
     packet->ntc_temp_ch0 = (int16_t)(NTC_DataBuffer.temperature_ch0 * 100);
 #endif
@@ -28,4 +29,4 @@ void pack_data(PacketData_t *packet)
 #endif
 
 //PID部分如有需要可在此添加
-}
+}   

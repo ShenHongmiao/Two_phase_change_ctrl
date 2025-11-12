@@ -3,9 +3,13 @@
 
 #include "NTC.h"
 #include "WF5803F.h"
+#include "V_Detect.h"
 // #include "PID.h"
+#include <string.h>
+
 
 typedef struct {
+    int16_t voltage;      // 电压 * 100 (V)
 #if NTC_CHANNEL0_ENABLE
     int16_t ntc_temp_ch0;  // 温度 * 100 (℃)
 #endif
