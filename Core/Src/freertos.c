@@ -177,7 +177,7 @@ void StartDefaultTask(void const * argument)
   // 发送启动消息（使用非阻塞方式，但此时已经没有竞争）
   //send_ready(CMD_TEXT_INFO, "system start\n"); // 发送时间: ~1.56ms @115200 (18字节)
   send2pc(CMD_TEXT_INFO, NULL, "system start\n");
-  HAL_UART_Receive_IT(&huart2, &rx_byte, 1);//打开串口2接收中断，接收到的数据放入rx_byte变量，相当于初始化接收
+  //HAL_UART_Receive_IT(&huart2, &rx_byte, 1);//打开串口2接收中断，接收到的数据放入rx_byte变量，相当于初始化接收
 
   #if WF5803F_Enable
   WF5803F_Init();//初始化WF5803F模块
@@ -249,7 +249,7 @@ void StartMonitorTask(void const * argument)
    
     
     //延迟时间注意要大于ADC转换时间（大概 100ns）+消息发送时间，否则会出现发送信息重叠的问题，以及ADC数据错乱的问题（目前双传感器不带PID发送已经测试最小间隔5ms）
-    osDelay(100);
+    osDelay(1000);
   }
   /* USER CODE END StartMonitorTask */
 }
@@ -297,13 +297,31 @@ void StartvoltageWarningtask(void const * argument)
 void StartReceive_Target_change(void const * argument)
 {
   /* USER CODE BEGIN StartReceive_Target_change */
+  osEvent event;
+  
+  send_message("=== USART Receive Task Started (Priority: Realtime) ===\n");
   /* Infinite loop */
   for(;;)
   {
+    // 阻塞读取队列，永久等待直到有数据到来
+    event = osMessageGet(usart2_rx_queueHandle, osWaitForever);
+    // ========== 在此处添加命令处理逻辑 ==========
+    if (event.status == osEventMessage) {
+      // 从队列中获取rx_buffer指针
+      uint8_t *received_data = (uint8_t *)event.value.p;
+      
+      // 将接收到的数据以文本形式发送到上位机进行验证
+      // 假设接收到的是文本数据，使用字符串格式发送
+      send2pc(CMD_TEXT_INFO, NULL, "Received: %s\n", (char *)received_data);
+    }
+    memset(rx_content, 0, UART_RX_BUFFER_SIZE);//清空接收内容缓冲区
+    
     osDelay(1);
   }
   /* USER CODE END StartReceive_Target_change */
 }
+
+
 
 /* USER CODE BEGIN Header_StartCtrl_task */
 /**

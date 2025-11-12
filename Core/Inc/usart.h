@@ -40,6 +40,8 @@ extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN Private defines */
+#define UART_TX_BUFFER_SIZE 256
+#define UART_RX_BUFFER_SIZE 128 // DMA 接收缓冲区大小
 //数据帧格式定义
 #define FRAME_HEAD 0xDE
 #define FRAME_TAIL 0xED
@@ -58,8 +60,8 @@ void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN Prototypes */
 extern osMessageQId usart2_rx_queueHandle;
 extern osMessageQId usart1_rx_queueHandle;
-extern uint8_t rx_byte;
-
+extern uint8_t rx_content[UART_RX_BUFFER_SIZE];
+//extern uint8_t rx_byte;
 void send_message(const char *format, ...);
 void send_ready(uint8_t cmd_id, const char *format, ...);
 void send_message_direct(const char *format, ...);
