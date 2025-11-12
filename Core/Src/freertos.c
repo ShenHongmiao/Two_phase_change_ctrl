@@ -30,6 +30,7 @@
 #include "NTC.h"
 #include "V_Detect.h"
 #include "data_packet.h"
+#include "serial_to_pc.h"
 #include <string.h>
 /* USER CODE END Includes */
 
@@ -231,7 +232,7 @@ void StartMonitorTask(void const * argument)
     pack_data(&packet_data);
     //判断宏定义来发送信息
     #if NTC_CHANNEL0_ENABLE
-    send_ready(CMD_NTC, "CH0:%.2f\n", packet_data.ntc_temp_ch0); // 发送时间: ~1.30ms @115200 (15字节)
+    //send_ready(CMD_NTC, "CH0:%.2f\n", packet_data.ntc_temp_ch0); // 发送时间: ~1.30ms @115200 (15字节)
     #endif
     #if NTC_CHANNEL1_ENABLE
     send_ready(CMD_NTC, "CH1:%.2f\n", packet_data.ntc_temp_ch1); // 发送时间: ~1.30ms @115200 (15字节)
@@ -240,9 +241,10 @@ void StartMonitorTask(void const * argument)
     #if WF5803F_Enable
     send_ready(CMD_WF5803F, "T:%.2f,P:%.2f\n", packet_data.wf_temperature, packet_data.wf_pressure); // 发送时间: ~2.00ms @115200 (23字节)
     #endif
-    
+
+    send2pc(CMD_NTC, &packet_data);
     //延迟时间注意要大于ADC转换时间（大概 100ns）+消息发送时间，否则会出现发送信息重叠的问题，以及ADC数据错乱的问题
-    osDelay(5);
+    osDelay(1000);
   }
   /* USER CODE END StartMonitorTask */
 }

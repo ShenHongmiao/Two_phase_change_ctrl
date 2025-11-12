@@ -24,7 +24,7 @@ typedef enum {
 #define WF5803F_REG_STATUS    0x02        // 状态寄存器
 #define WF5803F_REG_PRESS_MSB 0x06        // 气压数据 MSB
 #define WF5803F_REG_TEMP_MSB  0x09        // 温度数据 MSB
-#define WF5803F_Enable 1  // 1: 使能WF5803F传感器读取，0: 禁用
+#define WF5803F_Enable 0  // 1: 使能WF5803F传感器读取，0: 禁用
 
 // WF5803F 数据结构
 typedef struct {

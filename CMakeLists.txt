@@ -49,6 +49,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     Core/Src/NTC.c
     Core/Src/V_Detect.c
     Core/Src/data_packet.c
+    Core/Src/serial_to_pc.c
 )
 
 # Add include paths
