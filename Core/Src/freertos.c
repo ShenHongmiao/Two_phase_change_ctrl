@@ -248,8 +248,8 @@ void StartMonitorTask(void const * argument)
 
    
     
-    //延迟时间注意要大于ADC转换时间（大概 100ns）+消息发送时间，否则会出现发送信息重叠的问题，以及ADC数据错乱的问题
-    osDelay(1000);
+    //延迟时间注意要大于ADC转换时间（大概 100ns）+消息发送时间，否则会出现发送信息重叠的问题，以及ADC数据错乱的问题（目前双传感器不带PID发送已经测试最小间隔5ms）
+    osDelay(100);
   }
   /* USER CODE END StartMonitorTask */
 }
