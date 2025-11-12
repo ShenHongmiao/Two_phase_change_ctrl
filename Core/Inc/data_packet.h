@@ -7,23 +7,19 @@
 
 typedef struct {
 #if NTC_CHANNEL0_ENABLE
-    float ntc_temp_ch0;
+    int16_t ntc_temp_ch0;  // 温度 * 100 (℃)
 #endif
 
 #if NTC_CHANNEL1_ENABLE
-    float ntc_temp_ch1;
+    int16_t ntc_temp_ch1;  // 温度 * 100 (℃)
 #endif
 
 #if WF5803F_Enable
-    float wf_temperature;
-    float wf_pressure;
+    int16_t wf_temperature;  // 温度 * 100 (℃)
+    int32_t wf_pressure;     // 压力 * 100 (kPa)
 #endif
 
-#if ENABLE_PID
-    float pid_output;
-    float pid_target;
-    float pid_error;
-#endif
+// PID 部分如有需要可在此添加
 } PacketData_t;
 
 extern PacketData_t packet_data;

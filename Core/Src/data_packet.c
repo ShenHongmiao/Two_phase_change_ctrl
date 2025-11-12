@@ -15,16 +15,16 @@ void pack_data(PacketData_t *packet)
     pack_data_reset(packet);
 
 #if NTC_CHANNEL0_ENABLE
-    packet->ntc_temp_ch0 = NTC_DataBuffer.temperature_ch0;
+    packet->ntc_temp_ch0 = (int16_t)(NTC_DataBuffer.temperature_ch0 * 100);
 #endif
 
 #if NTC_CHANNEL1_ENABLE
-    packet->ntc_temp_ch1 = NTC_DataBuffer.temperature_ch1;
+    packet->ntc_temp_ch1 = (int16_t)(NTC_DataBuffer.temperature_ch1 * 100);
 #endif
 
 #if WF5803F_Enable
-    packet->wf_temperature = WF5803F_DataBuffer.temperature;
-    packet->wf_pressure    = WF5803F_DataBuffer.pressure;
+    packet->wf_temperature = (int16_t)(WF5803F_DataBuffer.temperature * 100);
+    packet->wf_pressure    = (int32_t)(WF5803F_DataBuffer.pressure * 100);
 #endif
 
 //PID部分如有需要可在此添加
