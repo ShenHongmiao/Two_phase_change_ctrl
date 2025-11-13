@@ -53,43 +53,69 @@
 /* USER CODE BEGIN Variables */
 
 /* USER CODE END Variables */
-osThreadId defaultTaskHandle;
-osThreadId MonitorTaskHandle;
-osThreadId VoltageWarningHandle;
-osThreadId Receive_Target_Handle;
-osThreadId Ctrl_taskHandle;
-osMessageQId usart2_rx_queueHandle;
-osMessageQId usart1_rx_queueHandle;
-osMutexId usart2_rx_mutexesHandle;
+/* Definitions for defaultTask */
+osThreadId_t defaultTaskHandle;
+const osThreadAttr_t defaultTask_attributes = {
+  .name = "defaultTask",
+  .stack_size = 256 * 4,
+  .priority = (osPriority_t) osPriorityRealtime,
+};
+/* Definitions for MonitorTask */
+osThreadId_t MonitorTaskHandle;
+const osThreadAttr_t MonitorTask_attributes = {
+  .name = "MonitorTask",
+  .stack_size = 256 * 4,
+  .priority = (osPriority_t) osPriorityHigh,
+};
+/* Definitions for VoltageWarning */
+osThreadId_t VoltageWarningHandle;
+const osThreadAttr_t VoltageWarning_attributes = {
+  .name = "VoltageWarning",
+  .stack_size = 256 * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
+/* Definitions for Receive_Target_ */
+osThreadId_t Receive_Target_Handle;
+const osThreadAttr_t Receive_Target__attributes = {
+  .name = "Receive_Target_",
+  .stack_size = 256 * 4,
+  .priority = (osPriority_t) osPriorityRealtime,
+};
+/* Definitions for Ctrl_task */
+osThreadId_t Ctrl_taskHandle;
+const osThreadAttr_t Ctrl_task_attributes = {
+  .name = "Ctrl_task",
+  .stack_size = 512 * 4,
+  .priority = (osPriority_t) osPriorityHigh,
+};
+/* Definitions for usart2_rx_queue */
+osMessageQueueId_t usart2_rx_queueHandle;
+const osMessageQueueAttr_t usart2_rx_queue_attributes = {
+  .name = "usart2_rx_queue"
+};
+/* Definitions for usart1_rx_queue */
+osMessageQueueId_t usart1_rx_queueHandle;
+const osMessageQueueAttr_t usart1_rx_queue_attributes = {
+  .name = "usart1_rx_queue"
+};
+/* Definitions for usart2_rx_mutexes */
+osMutexId_t usart2_rx_mutexesHandle;
+const osMutexAttr_t usart2_rx_mutexes_attributes = {
+  .name = "usart2_rx_mutexes"
+};
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
 
 /* USER CODE END FunctionPrototypes */
 
-void StartDefaultTask(void const * argument);
-void StartMonitorTask(void const * argument);
-void StartvoltageWarningtask(void const * argument);
-void StartReceive_Target_change(void const * argument);
-void StartCtrl_task(void const * argument);
+void StartDefaultTask(void *argument);
+void StartMonitorTask(void *argument);
+void StartvoltageWarningtask(void *argument);
+void StartReceive_Target_change(void *argument);
+void StartCtrl_task(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
-
-/* GetIdleTaskMemory prototype (linked to static allocation support) */
-void vApplicationGetIdleTaskMemory( StaticTask_t **ppxIdleTaskTCBBuffer, StackType_t **ppxIdleTaskStackBuffer, uint32_t *pulIdleTaskStackSize );
-
-/* USER CODE BEGIN GET_IDLE_TASK_MEMORY */
-static StaticTask_t xIdleTaskTCBBuffer;
-static StackType_t xIdleStack[configMINIMAL_STACK_SIZE];
-
-void vApplicationGetIdleTaskMemory( StaticTask_t **ppxIdleTaskTCBBuffer, StackType_t **ppxIdleTaskStackBuffer, uint32_t *pulIdleTaskStackSize )
-{
-  *ppxIdleTaskTCBBuffer = &xIdleTaskTCBBuffer;
-  *ppxIdleTaskStackBuffer = &xIdleStack[0];
-  *pulIdleTaskStackSize = configMINIMAL_STACK_SIZE;
-  /* place for user code */
-}
-/* USER CODE END GET_IDLE_TASK_MEMORY */
 
 /**
   * @brief  FreeRTOS initialization
@@ -101,9 +127,8 @@ void MX_FREERTOS_Init(void) {
 
   /* USER CODE END Init */
   /* Create the mutex(es) */
-  /* definition and creation of usart2_rx_mutexes */
-  osMutexDef(usart2_rx_mutexes);
-  usart2_rx_mutexesHandle = osMutexCreate(osMutex(usart2_rx_mutexes));
+  /* creation of usart2_rx_mutexes */
+  usart2_rx_mutexesHandle = osMutexNew(&usart2_rx_mutexes_attributes);
 
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
@@ -118,38 +143,31 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE END RTOS_TIMERS */
 
   /* Create the queue(s) */
-  /* definition and creation of usart2_rx_queue */
-  osMessageQDef(usart2_rx_queue, 16, uint32_t);
-  usart2_rx_queueHandle = osMessageCreate(osMessageQ(usart2_rx_queue), NULL);
+  /* creation of usart2_rx_queue */
+  usart2_rx_queueHandle = osMessageQueueNew (16, sizeof(uint32_t), &usart2_rx_queue_attributes);
 
-  /* definition and creation of usart1_rx_queue */
-  osMessageQDef(usart1_rx_queue, 16, uint32_t);
-  usart1_rx_queueHandle = osMessageCreate(osMessageQ(usart1_rx_queue), NULL);
+  /* creation of usart1_rx_queue */
+  usart1_rx_queueHandle = osMessageQueueNew (16, sizeof(uint32_t), &usart1_rx_queue_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
-  /* definition and creation of defaultTask */
-  osThreadDef(defaultTask, StartDefaultTask, osPriorityRealtime, 0, 256);
-  defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
+  /* creation of defaultTask */
+  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
-  /* definition and creation of MonitorTask */
-  osThreadDef(MonitorTask, StartMonitorTask, osPriorityHigh, 0, 256);
-  MonitorTaskHandle = osThreadCreate(osThread(MonitorTask), NULL);
+  /* creation of MonitorTask */
+  MonitorTaskHandle = osThreadNew(StartMonitorTask, NULL, &MonitorTask_attributes);
 
-  /* definition and creation of VoltageWarning */
-  osThreadDef(VoltageWarning, StartvoltageWarningtask, osPriorityLow, 0, 256);
-  VoltageWarningHandle = osThreadCreate(osThread(VoltageWarning), NULL);
+  /* creation of VoltageWarning */
+  VoltageWarningHandle = osThreadNew(StartvoltageWarningtask, NULL, &VoltageWarning_attributes);
 
-  /* definition and creation of Receive_Target_ */
-  osThreadDef(Receive_Target_, StartReceive_Target_change, osPriorityRealtime, 0, 256);
-  Receive_Target_Handle = osThreadCreate(osThread(Receive_Target_), NULL);
+  /* creation of Receive_Target_ */
+  Receive_Target_Handle = osThreadNew(StartReceive_Target_change, NULL, &Receive_Target__attributes);
 
-  /* definition and creation of Ctrl_task */
-  osThreadDef(Ctrl_task, StartCtrl_task, osPriorityHigh, 0, 512);
-  Ctrl_taskHandle = osThreadCreate(osThread(Ctrl_task), NULL);
+  /* creation of Ctrl_task */
+  Ctrl_taskHandle = osThreadNew(StartCtrl_task, NULL, &Ctrl_task_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -160,6 +178,10 @@ void MX_FREERTOS_Init(void) {
   osThreadSuspend(Ctrl_taskHandle);
   /* USER CODE END RTOS_THREADS */
 
+  /* USER CODE BEGIN RTOS_EVENTS */
+  /* add events, ... */
+  /* USER CODE END RTOS_EVENTS */
+
 }
 
 /* USER CODE BEGIN Header_StartDefaultTask */
@@ -169,7 +191,7 @@ void MX_FREERTOS_Init(void) {
   * @retval None
   */
 /* USER CODE END Header_StartDefaultTask */
-void StartDefaultTask(void const * argument)
+void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN StartDefaultTask */
   // 初始化外设
@@ -211,7 +233,7 @@ void StartDefaultTask(void const * argument)
 * @retval None
 */
 /* USER CODE END Header_StartMonitorTask */
-void StartMonitorTask(void const * argument)
+void StartMonitorTask(void *argument)
 {
   /* USER CODE BEGIN StartMonitorTask */
   
@@ -261,7 +283,7 @@ void StartMonitorTask(void const * argument)
 * @retval None
 */
 /* USER CODE END Header_StartvoltageWarningtask */
-void StartvoltageWarningtask(void const * argument)
+void StartvoltageWarningtask(void *argument)
 {
   /* USER CODE BEGIN StartvoltageWarningtask */
     Voltage_StartDMA();//启动电压检测的ADC DMA转换
@@ -294,21 +316,22 @@ void StartvoltageWarningtask(void const * argument)
 * @retval None
 */
 /* USER CODE END Header_StartReceive_Target_change */
-void StartReceive_Target_change(void const * argument)
+void StartReceive_Target_change(void *argument)
 {
   /* USER CODE BEGIN StartReceive_Target_change */
-  osEvent event;
+  uint32_t received_value;
+  osStatus_t status;
   
   send_message("=== USART Receive Task Started (Priority: Realtime) ===\n");
   /* Infinite loop */
   for(;;)
   {
-    // 阻塞读取队列，永久等待直到有数据到来
-    event = osMessageGet(usart2_rx_queueHandle, osWaitForever);
+    // 阻塞读取队列，永久等待直到有数据到来 (CMSIS V2 API)
+    status = osMessageQueueGet(usart2_rx_queueHandle, &received_value, NULL, osWaitForever);
     // ========== 在此处添加命令处理逻辑 ==========
-    if (event.status == osEventMessage) {
+    if (status == osOK) {
       // 从队列中获取rx_buffer指针
-      uint8_t *received_data = (uint8_t *)event.value.p;
+      uint8_t *received_data = (uint8_t *)received_value;
       
       // 将接收到的数据以文本形式发送到上位机进行验证
       // 假设接收到的是文本数据，使用字符串格式发送
@@ -328,7 +351,7 @@ void StartReceive_Target_change(void const * argument)
 * @retval None
 */
 /* USER CODE END Header_StartCtrl_task */
-void StartCtrl_task(void const * argument)
+void StartCtrl_task(void *argument)
 {
   /* USER CODE BEGIN StartCtrl_task */
   /* Infinite loop */
@@ -343,3 +366,4 @@ void StartCtrl_task(void const * argument)
 /* USER CODE BEGIN Application */
 
 /* USER CODE END Application */
+

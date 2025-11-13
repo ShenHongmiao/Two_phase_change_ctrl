@@ -38,12 +38,12 @@ static volatile uint16_t idle_buf_len = 0;
 // 当前DMA正在使用的缓冲区索引，0=buffer_a，1=buffer_b
 static volatile uint8_t active_buf_index = 0;
 
-// 互斥锁，保护缓冲区切换和状态变量
-static osMutexId uart_tx_mutex = NULL;
+// 互斥锁，保护缓冲区切换和状态变量 (CMSIS V2)
+static osMutexId_t uart_tx_mutex = NULL;
 /*--------------------------------------------------------------------------------------------------*/
 static uint8_t rx_buffer[UART_RX_BUFFER_SIZE];
 uint8_t rx_content[UART_RX_BUFFER_SIZE];
-extern osMessageQId usart2_rx_queueHandle;
+extern osMessageQueueId_t usart2_rx_queueHandle;  // CMSIS V2 类型
 //uint8_t rx_byte; // 用于接收单个字节
 
 /* USER CODE END 0 */
@@ -299,14 +299,19 @@ void send_message(const char *format, ...)
     // 开始处理可变参数
     va_start(args, format);
     
-    // 首次调用时创建互斥锁
+    // 首次调用时创建互斥锁 (CMSIS V2 API)
     if (uart_tx_mutex == NULL) {
-        osMutexDef(uart_tx_mutex);
-        uart_tx_mutex = osMutexCreate(osMutex(uart_tx_mutex));
+        const osMutexAttr_t attr = {
+            .name = "uart_tx_mutex",
+            .attr_bits = osMutexRecursive | osMutexPrioInherit,
+            .cb_mem = NULL,
+            .cb_size = 0U
+        };
+        uart_tx_mutex = osMutexNew(&attr);
     }
     
-    // 尝试获取互斥锁，超时为0立即返回，获取失败则丢弃本次发送
-    if (osMutexWait(uart_tx_mutex, 0) != osOK) {
+    // 尝试获取互斥锁，超时为0立即返回，获取失败则丢弃本次发送 (CMSIS V2 API)
+    if (osMutexAcquire(uart_tx_mutex, 0) != osOK) {
         va_end(args);
         return;
     }
@@ -366,14 +371,19 @@ void send_binary_data(const void *data, size_t len)
     return;
   }
     
-    // 首次调用时创建互斥锁
+    // 首次调用时创建互斥锁 (CMSIS V2 API)
     if (uart_tx_mutex == NULL) {
-        osMutexDef(uart_tx_mutex);
-        uart_tx_mutex = osMutexCreate(osMutex(uart_tx_mutex));
+        const osMutexAttr_t attr = {
+            .name = "uart_tx_mutex",
+            .attr_bits = osMutexRecursive | osMutexPrioInherit,
+            .cb_mem = NULL,
+            .cb_size = 0U
+        };
+        uart_tx_mutex = osMutexNew(&attr);
     }
     
-    // 尝试获取互斥锁,超时为0立即返回,获取失败则丢弃本次发送
-  if (osMutexWait(uart_tx_mutex, 0) != osOK) {
+    // 尝试获取互斥锁,超时为0立即返回,获取失败则丢弃本次发送 (CMSIS V2 API)
+  if (osMutexAcquire(uart_tx_mutex, 0) != osOK) {
     return;
   }
     
@@ -471,8 +481,10 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size){
   if (huart->Instance == USART2) {
+
     memcpy(rx_content, rx_buffer, Size);
-    osMessagePut(usart2_rx_queueHandle, (uint32_t)rx_content, 0);
+    uint32_t msg = (uint32_t)rx_content;
+    osMessageQueuePut(usart2_rx_queueHandle, &msg, 0, 0);  // CMSIS V2 API
     //清空缓冲区以防数据残留
     memset(rx_buffer, 0, UART_RX_BUFFER_SIZE);
     HAL_UARTEx_ReceiveToIdle_DMA(&huart2, rx_buffer, UART_RX_BUFFER_SIZE);

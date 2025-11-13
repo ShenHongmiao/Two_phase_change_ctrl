@@ -108,7 +108,8 @@ int main(void)
   __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 0);
   /* USER CODE END 2 */
 
-  /* Call init function for freertos objects (in cmsis_os2.c) */
+  /* Init scheduler */
+  osKernelInitialize();  /* Call init function for freertos objects (in cmsis_os2.c) */
   MX_FREERTOS_Init();
 
   /* Start scheduler */
