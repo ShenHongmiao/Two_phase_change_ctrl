@@ -50,6 +50,7 @@ extern UART_HandleTypeDef huart2;
 #define CMD_WF5803F        0x02
 #define CMD_VOLTAGE        0x03
 #define CMD_PID_VALUE      0x04
+#define CMD_RESPENSE       0x05
 #define CMD_TEXT_INFO      0x0F  // 通用信息
 //0xA...从上位机接收任务指令的命令ID
 /* USER CODE END Private defines */

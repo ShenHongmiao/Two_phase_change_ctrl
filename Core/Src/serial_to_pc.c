@@ -168,3 +168,38 @@ void send2pc(uint8_t cmd_id, PacketData_t *data,const char *format, ...)
 
     send_binary_data(frame, index);
 }
+
+/**
+ * @brief 发送应答消息到上位机
+ * @param received_cmd_id 接收到的命令ID（保留参数以保持接口一致，但当前未使用）
+ * @param format 应答消息格式（保留参数以保持接口一致，但当前未使用）
+ * @param ... 可变参数（保留参数以保持接口一致，但当前未使用）
+ */
+//应答数据结构：帧头(1字节)+CMD_RESPENSE(1字节)+数据长度(1字节)+固定数据0xB1,0xB2(2字节)+CRC8(1字节)+帧尾(1字节)
+void send_response(void)
+{
+    uint8_t frame[256];
+    uint16_t index = 0;
+
+    // 帧头
+    frame[index++] = FRAME_HEAD;
+
+    // 命令ID固定为 CMD_RESPENSE
+    frame[index++] = CMD_RESPENSE;
+
+    // 数据长度固定为 2 字节
+    frame[index++] = 2;
+
+    // 固定应答数据: 0xB1, 0xB2
+    frame[index++] = 0xB1;
+    frame[index++] = 0xB2;
+
+    // CRC8 校验（从帧头到数据体结束）
+    uint8_t crc = crc8_calculate(frame, index);
+    frame[index++] = crc;
+
+    // 帧尾
+    frame[index++] = FRAME_TAIL;
+
+    send_binary_data(frame, index);
+}

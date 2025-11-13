@@ -256,7 +256,7 @@ void StartMonitorTask(void *argument)
     //判断宏定义来发送信息
     #if NTC_CHANNEL0_ENABLE
     //send_ready(CMD_NTC, "CH0:%.2f\n", packet_data.ntc_temp_ch0); // 发送时间: ~1.30ms @115200 (15字节)
-  send2pc(CMD_NTC, &packet_data, NULL);
+    send2pc(CMD_NTC, &packet_data, NULL);
     #endif
     #if NTC_CHANNEL1_ENABLE
     //send_ready(CMD_NTC, "CH1:%.2f\n", packet_data.ntc_temp_ch1); // 发送时间: ~1.30ms @115200 (15字节)
@@ -265,13 +265,13 @@ void StartMonitorTask(void *argument)
     //发送WF5803F数据
     #if WF5803F_Enable
     //send_ready(CMD_WF5803F, "T:%.2f,P:%.2f\n", packet_data.wf_temperature, packet_data.wf_pressure); // 发送时间: ~2.00ms @115200 (23字节)
-  send2pc(CMD_WF5803F, &packet_data, NULL);
+    send2pc(CMD_WF5803F, &packet_data, NULL);
     #endif
 
    
     
     //延迟时间注意要大于ADC转换时间（大概 100ns）+消息发送时间，否则会出现发送信息重叠的问题，以及ADC数据错乱的问题（目前双传感器不带PID发送已经测试最小间隔5ms）
-    osDelay(100);
+    osDelay(50);
   }
   /* USER CODE END StartMonitorTask */
 }
@@ -291,7 +291,7 @@ void StartvoltageWarningtask(void *argument)
     
     Voltage_Calculate(&Voltage_DataBuffer);//计算电源电压
     pack_data(&packet_data);
-  send2pc(CMD_VOLTAGE, &packet_data, NULL);
+    send2pc(CMD_VOLTAGE, &packet_data, NULL);
     //Voltage_info_send(&Voltage_DataBuffer);//发送电源电压信息: ~1.30ms(OK) 或 ~1.39ms(LOW) @115200
     // send_message("Voltage Check Done\n");//发送电源电压检查完成消息，约1.20ms @115200
   /* Infinite loop */
@@ -301,7 +301,7 @@ void StartvoltageWarningtask(void *argument)
     osDelay(1); // 等待ADC转换完成（1ms足够，实际只需约100μs）
     
     Voltage_Calculate(&Voltage_DataBuffer);//计算电源电压
-  send2pc(CMD_VOLTAGE, &packet_data, NULL);
+    send2pc(CMD_VOLTAGE, &packet_data, NULL);
     //Voltage_info_send(&Voltage_DataBuffer);//发送电源电压信息: ~1.30ms(OK) 或 ~1.39ms(LOW) @115200
     //send_message("Voltage Check Done\n");//发送电源电压检查完成消息，约1.20ms @115200
     
@@ -334,11 +334,13 @@ void StartReceive_Target_change(void *argument)
 
     if (status == osOK) {
       // 从队列中获取环形缓冲池中的缓冲区指针
-      uint8_t *received_data = (uint8_t *)received_value;
+      // uint8_t *received_data = (uint8_t *)received_value;  // 暂时不使用接收数据
       
-      // 将接收到的数据以文本形式发送到上位机进行验证
-      // 假设接收到的是文本数据，使用字符串格式发送
-      send2pc(CMD_TEXT_INFO, NULL, "Received: %s\n", (char *)received_data);
+      // 发送固定应答数据 0xB1, 0xB2
+      send_response();  // 参数已无实际作用，传 0 和 NULL 即可
+      
+      // 如果需要调试接收到的数据，可以取消注释下面这行
+      // send2pc(CMD_TEXT_INFO, NULL, "Received: %s\n", (char *)received_value);
       
       // 注意：不需要手动清空缓冲区，下次中断会自动清空并复用
     }
