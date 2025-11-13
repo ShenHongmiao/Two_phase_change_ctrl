@@ -271,7 +271,7 @@ void StartMonitorTask(void *argument)
    
     
     //延迟时间注意要大于ADC转换时间（大概 100ns）+消息发送时间，否则会出现发送信息重叠的问题，以及ADC数据错乱的问题（目前双传感器不带PID发送已经测试最小间隔5ms）
-    osDelay(1000);
+    osDelay(100);
   }
   /* USER CODE END StartMonitorTask */
 }
@@ -329,6 +329,9 @@ void StartReceive_Target_change(void *argument)
     // 阻塞读取队列，永久等待直到有数据到来 (CMSIS V2 API)
     status = osMessageQueueGet(usart2_rx_queueHandle, &received_value, NULL, osWaitForever);
     // ========== 在此处添加命令处理逻辑 ==========
+    // LED 闪烁，指示接收事件（PB2）
+    HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_2);
+
     if (status == osOK) {
       // 从队列中获取环形缓冲池中的缓冲区指针
       uint8_t *received_data = (uint8_t *)received_value;
