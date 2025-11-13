@@ -41,8 +41,11 @@ static volatile uint8_t active_buf_index = 0;
 // 互斥锁，保护缓冲区切换和状态变量 (CMSIS V2)
 static osMutexId_t uart_tx_mutex = NULL;
 /*--------------------------------------------------------------------------------------------------*/
-static uint8_t rx_buffer[UART_RX_BUFFER_SIZE];
-uint8_t rx_content[UART_RX_BUFFER_SIZE];
+// 接收环形缓冲池（4个缓冲区，支持连续快速接收）
+#define RX_BUFFER_POOL_SIZE 4
+static uint8_t rx_buffer[UART_RX_BUFFER_SIZE];  // DMA 接收缓冲区
+static uint8_t rx_content_pool[RX_BUFFER_POOL_SIZE][UART_RX_BUFFER_SIZE];  // 环形缓冲池
+static volatile uint8_t rx_pool_index = 0;  // 当前使用的缓冲池索引
 extern osMessageQueueId_t usart2_rx_queueHandle;  // CMSIS V2 类型
 //uint8_t rx_byte; // 用于接收单个字节
 
@@ -481,12 +484,26 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size){
   if (huart->Instance == USART2) {
-
-    memcpy(rx_content, rx_buffer, Size);
-    uint32_t msg = (uint32_t)rx_content;
+    // 获取当前缓冲区指针
+    uint8_t *current_buffer = rx_content_pool[rx_pool_index];
+    
+    // 先清空目标缓冲区，防止数据残留
+    memset(current_buffer, 0, UART_RX_BUFFER_SIZE);
+    
+    // 从 DMA 缓冲区复制数据到环形缓冲池
+    memcpy(current_buffer, rx_buffer, Size);
+    
+    // 将当前缓冲区地址放入队列
+    uint32_t msg = (uint32_t)current_buffer;
     osMessageQueuePut(usart2_rx_queueHandle, &msg, 0, 0);  // CMSIS V2 API
-    //清空缓冲区以防数据残留
+    
+    // 更新环形缓冲池索引（循环使用）
+    rx_pool_index = (rx_pool_index + 1) % RX_BUFFER_POOL_SIZE;
+    
+    // 清空 DMA 接收缓冲区
     memset(rx_buffer, 0, UART_RX_BUFFER_SIZE);
+    
+    // 重新启动 DMA 接收
     HAL_UARTEx_ReceiveToIdle_DMA(&huart2, rx_buffer, UART_RX_BUFFER_SIZE);
   }
 }

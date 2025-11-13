@@ -330,14 +330,15 @@ void StartReceive_Target_change(void *argument)
     status = osMessageQueueGet(usart2_rx_queueHandle, &received_value, NULL, osWaitForever);
     // ========== 在此处添加命令处理逻辑 ==========
     if (status == osOK) {
-      // 从队列中获取rx_buffer指针
+      // 从队列中获取环形缓冲池中的缓冲区指针
       uint8_t *received_data = (uint8_t *)received_value;
       
       // 将接收到的数据以文本形式发送到上位机进行验证
       // 假设接收到的是文本数据，使用字符串格式发送
       send2pc(CMD_TEXT_INFO, NULL, "Received: %s\n", (char *)received_data);
+      
+      // 注意：不需要手动清空缓冲区，下次中断会自动清空并复用
     }
-    memset(rx_content, 0, UART_RX_BUFFER_SIZE);//清空接收内容缓冲区
     
     osDelay(1);
   }

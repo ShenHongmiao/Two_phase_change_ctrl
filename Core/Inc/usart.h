@@ -60,7 +60,7 @@ void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN Prototypes */
 extern osMessageQueueId_t usart2_rx_queueHandle;  // CMSIS V2 类型
 extern osMessageQueueId_t usart1_rx_queueHandle;  // CMSIS V2 类型
-extern uint8_t rx_content[UART_RX_BUFFER_SIZE];
+// 注意：rx_content 已改为环形缓冲池，不再需要外部访问
 //extern uint8_t rx_byte;
 void send_message(const char *format, ...);
 void send_ready(uint8_t cmd_id, const char *format, ...);
