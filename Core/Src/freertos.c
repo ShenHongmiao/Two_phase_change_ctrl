@@ -144,7 +144,7 @@ void MX_FREERTOS_Init(void) {
   VoltageWarningHandle = osThreadCreate(osThread(VoltageWarning), NULL);
 
   /* definition and creation of Receive_Target_ */
-  osThreadDef(Receive_Target_, StartReceive_Target_change, osPriorityLow, 0, 256);
+  osThreadDef(Receive_Target_, StartReceive_Target_change, osPriorityRealtime, 0, 256);
   Receive_Target_Handle = osThreadCreate(osThread(Receive_Target_), NULL);
 
   /* definition and creation of Ctrl_task */
@@ -320,8 +320,6 @@ void StartReceive_Target_change(void const * argument)
   }
   /* USER CODE END StartReceive_Target_change */
 }
-
-
 
 /* USER CODE BEGIN Header_StartCtrl_task */
 /**
