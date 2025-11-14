@@ -58,7 +58,7 @@ osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
   .name = "defaultTask",
   .stack_size = 256 * 4,
-  .priority = (osPriority_t) osPriorityRealtime,
+  .priority = (osPriority_t) osPriorityRealtime7,
 };
 /* Definitions for MonitorTask */
 osThreadId_t MonitorTaskHandle;
@@ -79,14 +79,21 @@ osThreadId_t Receive_Target_Handle;
 const osThreadAttr_t Receive_Target__attributes = {
   .name = "Receive_Target_",
   .stack_size = 256 * 4,
-  .priority = (osPriority_t) osPriorityRealtime,
+  .priority = (osPriority_t) osPriorityRealtime6,
 };
 /* Definitions for Ctrl_task */
 osThreadId_t Ctrl_taskHandle;
 const osThreadAttr_t Ctrl_task_attributes = {
   .name = "Ctrl_task",
   .stack_size = 512 * 4,
-  .priority = (osPriority_t) osPriorityHigh,
+  .priority = (osPriority_t) osPriorityRealtime5,
+};
+/* Definitions for TX_Task */
+osThreadId_t TX_TaskHandle;
+const osThreadAttr_t TX_Task_attributes = {
+  .name = "TX_Task",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityAboveNormal,
 };
 /* Definitions for usart2_rx_queue */
 osMessageQueueId_t usart2_rx_queueHandle;
@@ -103,6 +110,11 @@ osMutexId_t usart2_rx_mutexesHandle;
 const osMutexAttr_t usart2_rx_mutexes_attributes = {
   .name = "usart2_rx_mutexes"
 };
+/* Definitions for data_update_mutexe */
+osMutexId_t data_update_mutexeHandle;
+const osMutexAttr_t data_update_mutexe_attributes = {
+  .name = "data_update_mutexe"
+};
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -114,6 +126,7 @@ void StartMonitorTask(void *argument);
 void StartvoltageWarningtask(void *argument);
 void StartReceive_Target_change(void *argument);
 void StartCtrl_task(void *argument);
+void StartTX_Task(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -129,6 +142,9 @@ void MX_FREERTOS_Init(void) {
   /* Create the mutex(es) */
   /* creation of usart2_rx_mutexes */
   usart2_rx_mutexesHandle = osMutexNew(&usart2_rx_mutexes_attributes);
+
+  /* creation of data_update_mutexe */
+  data_update_mutexeHandle = osMutexNew(&data_update_mutexe_attributes);
 
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
@@ -168,6 +184,9 @@ void MX_FREERTOS_Init(void) {
 
   /* creation of Ctrl_task */
   Ctrl_taskHandle = osThreadNew(StartCtrl_task, NULL, &Ctrl_task_attributes);
+
+  /* creation of TX_Task */
+  TX_TaskHandle = osThreadNew(StartTX_Task, NULL, &TX_Task_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -366,6 +385,24 @@ void StartCtrl_task(void *argument)
     osDelay(1);
   }
   /* USER CODE END StartCtrl_task */
+}
+
+/* USER CODE BEGIN Header_StartTX_Task */
+/**
+* @brief Function implementing the TX_Task thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartTX_Task */
+void StartTX_Task(void *argument)
+{
+  /* USER CODE BEGIN StartTX_Task */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END StartTX_Task */
 }
 
 /* Private application code --------------------------------------------------*/
