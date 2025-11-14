@@ -53,6 +53,12 @@ extern UART_HandleTypeDef huart2;
 #define CMD_RESPENSE       0x05
 #define CMD_TEXT_INFO      0x0F  // 通用信息
 //0xA...从上位机接收任务指令的命令ID
+#define CMD_SET_PID_KP              0xA1
+#define CMD_SET_PID_KI              0xA2
+#define CMD_SET_PID_KD              0xA3
+#define CMD_SET_TARGET_TEMP         0xA4
+#define CMD_CHANGE_MODE             0xA5
+#define CMD_CHANGE_HEATING_TIME     0xA6
 /* USER CODE END Private defines */
 
 void MX_USART1_UART_Init(void);
