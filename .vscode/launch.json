@@ -29,10 +29,10 @@
             "runToEntryPoint": "main",  // 启动后自动运行到此函数并暂停,通常设为"main"
             
             // ========== SVD文件配置 ==========
-            "svdFile": "${config:STM32VSCodeExtension.cubeCLT.path}/STMicroelectronics_CMSIS_SVD/STM32F407.svd",
             // SVD文件提供外设寄存器的可视化查看功能
-            // 移植时需修改为对应芯片的SVD文件路径
+            // 如果安装了STM32CubeCLT,通常在: C:/ST/STM32CubeCLT_x.x.x/STMicroelectronics_CMSIS_SVD/STM32F407.svd
             // 下载地址: https://github.com/cmsis-svd/cmsis-svd
+            // "svdFile": "C:/ST/STM32CubeCLT_2.0.0/STMicroelectronics_CMSIS_SVD/STM32F407.svd",  // 请根据实际安装路径修改
             
             // ========== OpenOCD路径配置 ==========
             "serverpath": "E:/OpenOCD-20250710-0.12.0/bin/openocd.exe",
@@ -66,11 +66,13 @@
             // Linux示例: "/usr/share/openocd/scripts"
             
             // ========== GDB路径配置 ==========
-            "gdbPath": "${config:STM32VSCodeExtension.cubeCLT.path}/GNU-tools-for-STM32/bin/arm-none-eabi-gdb",
-            // ARM GDB调试器的路径
-            // 移植时可能需要修改,如使用自己安装的工具链:
-            //   Windows: "C:/gcc-arm-none-eabi/bin/arm-none-eabi-gdb.exe"
-            //   Linux: "/usr/bin/arm-none-eabi-gdb"
+            // ARM GDB调试器的路径,根据你的工具链安装位置选择以下之一:
+            // 选项1: 如果安装了STM32CubeCLT:
+            // "gdbPath": "C:/ST/STM32CubeCLT_2.0.0/GNU-tools-for-STM32/bin/arm-none-eabi-gdb.exe",
+            // 选项2: 如果使用独立的 GNU ARM Embedded Toolchain:
+            "gdbPath": "arm-none-eabi-gdb",  // 如果已添加到系统PATH,直接使用命令名
+            // 选项3: 指定完整路径:
+            // "gdbPath": "C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/13.2 Rel1/bin/arm-none-eabi-gdb.exe"
             
             // ========== 调试启动前命令 ==========
             "preLaunchCommands": [
