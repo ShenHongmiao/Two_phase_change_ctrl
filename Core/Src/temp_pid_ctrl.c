@@ -39,19 +39,17 @@ static float Clamp(float value, float min, float max);
 /* Function implementations --------------------------------------------------*/
 
 /**
- * @brief  设置加热MOS管硬件PWM占空比（0-10000）
- * @param  duty_ms: 0-1000ms（实际PWM周期为1000ms）
+ * @brief  设置加热MOS管硬件PWM占空比
+ * @param  duty_ms: 0-1000 (对应占空比0%-100%)
  * @note   使用 CubeMX 生成的 TIM3 PWM 控制
- *         TIM3配置: ARR=9999 (10ms硬件周期), 软件层面模拟1000ms周期
+ *         TIM3配置: ARR=65535, 将0-1000映射到0-65535
  */
 void Set_Heating_PWM(uint16_t duty_ms)
 {
     // 限幅：确保占空比在有效范围内
     if (duty_ms > 1000) duty_ms = 1000;
     
-    // 将0-1000ms映射到0-10000 PWM计数值
-    // duty_ms范围0-1000，对应占空比0%-100%
-    uint32_t pulse = duty_ms * 10; // 1000ms对应10000计数
+    uint32_t pulse = (uint32_t)(65535 / 1000)*(uint32_t)duty_ms;
     
     // 设置 TIM3 通道1 PWM 占空比 (PC6)
     __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, pulse);
@@ -282,20 +280,12 @@ void TempCtrl_Init(PID_Controller_t *pid)
     // 初始化硬件PWM为关断状态
     Set_Heating_PWM(0);
     
-    send_message("Temperature Control Initialized\n");
-    send_message("Target Temperature: %.2f°C\n", pid->setpoint);
-    send_message("PID Parameters: Kp=%.2f, Ki=%.2f, Kd=%.2f\n", 
-           pid->Kp, pid->Ki, pid->Kd);
-    send_message("Hardware PWM Mode (TIM3), Period: %dms\n", PWM_PERIOD_MS);
+    // send_message("Temperature Control Initialized\n");
+    // send_message("Target Temperature: %.2f°C\n", pid->setpoint);
+    // send_message("PID Parameters: Kp=%.2f, Ki=%.2f, Kd=%.2f\n", 
+    //        pid->Kp, pid->Ki, pid->Kd);
+    // send_message("Hardware PWM Mode (TIM3), Period: %dms\n", PWM_PERIOD_MS);
 
-    // 打印温度区间信息
-    // #if (TARGET_TEMP_INT < 50)
-    // send_message("[TEMP_CTRL] Temperature Range: LOW (30-50°C)\n");
-    // #elif (TARGET_TEMP_INT < 70)
-    // send_message("[TEMP_CTRL] Temperature Range: MID (50-70°C)\n");
-    // #else
-    // send_message("[TEMP_CTRL] Temperature Range: HIGH (70-100°C)\n");
-    // #endif
 }
 
 

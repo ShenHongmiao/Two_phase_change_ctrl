@@ -233,11 +233,10 @@ void StartDefaultTask(void *argument)
 void StartMonitorTask(void *argument)
 {
   /* USER CODE BEGIN StartMonitorTask */
-  uint32_t sys_tick_count_monitor;
+
   /* Infinite loop */
   for(;;)
   { 
-    sys_tick_count_monitor = osKernelGetTickCount(); // 获取系统滴答计数器的当前值
     NTC_StartDMA();//数据利用完毕重新启动DMA转换
     HAL_ADC_PollForConversion(&hadc1, 1); //死等转换完成，确保数据有效(osdelay会打断任务执行逻辑)
     #if WF5803F_Enable
@@ -265,7 +264,7 @@ void StartMonitorTask(void *argument)
     #endif
     
     //延迟时间注意要大于ADC转换时间（大概 100ns）+消息发送时间，否则会出现发送信息重叠的问题，以及ADC数据错乱的问题（目前双传感器不带PID发送已经测试最小间隔5ms）
-    osDelayUntil(sys_tick_count_monitor+100); // 每100ms执行一次
+    osDelay(20); // 每10ms采样一次
   }
   /* USER CODE END StartMonitorTask */
 }
@@ -367,6 +366,9 @@ void StartCtrl_task(void *argument)
     // PID计算并设置PWM输出
     PID_Compute(&Temp_PID_Controller_CH0, current_temp);
     Set_Heating_PWM((uint16_t)(Temp_PID_Controller_CH0.output));
+  
+
+    
     
     // 更新数据包（包含最新的PID输出值）
     pack_data(&packet_data);
