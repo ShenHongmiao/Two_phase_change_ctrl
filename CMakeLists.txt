@@ -50,6 +50,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     Core/Src/V_Detect.c
     Core/Src/data_packet.c
     Core/Src/serial_to_pc.c
+    Core/Src/temp_pid_ctrl.c
 )
 
 # Add include paths

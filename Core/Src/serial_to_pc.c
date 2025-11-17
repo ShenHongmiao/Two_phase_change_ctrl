@@ -32,6 +32,11 @@ uint16_t get_packet_data_length(uint8_t cmd_id, PacketData_t *data)
         length += sizeof(data->wf_pressure);
         break;
 #endif
+#if PID_CONTROL_ENABLE              
+    case CMD_PID_VALUE:
+        length += sizeof(data->pid_output_ch0);
+        break;
+#endif
     case CMD_VOLTAGE:
         length += sizeof(data->voltage);
         length += sizeof(uint8_t); // 状态字节
@@ -133,6 +138,15 @@ void send2pc(uint8_t cmd_id, PacketData_t *data,const char *format, ...)
             written += sizeof(data->wf_temperature);
             memcpy(payload + written, &data->wf_pressure, sizeof(data->wf_pressure));
             written += sizeof(data->wf_pressure);
+            break;
+#endif
+
+
+        
+#if PID_CONTROL_ENABLE  
+        case CMD_PID_VALUE:             
+            memcpy(payload + written, &data->pid_output_ch0, sizeof(data->pid_output_ch0));
+            written += sizeof(data->pid_output_ch0);
             break;
 #endif
 

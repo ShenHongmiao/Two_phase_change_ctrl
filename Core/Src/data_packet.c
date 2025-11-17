@@ -28,5 +28,9 @@ void pack_data(PacketData_t *packet)
     packet->wf_pressure    = (int32_t)(WF5803F_DataBuffer.pressure * 100);
 #endif
 
+#if PID_CONTROL_ENABLE
+    packet->pid_output_ch0 = (int16_t)(Temp_PID_Controller_CH0.output);
+#endif
+
 //PID部分如有需要可在此添加
 }   

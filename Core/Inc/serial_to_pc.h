@@ -4,6 +4,7 @@
 #include "usart.h"
 #include "data_packet.h"
 #include "V_Detect.h"
+#include "temp_pid_ctrl.h"
 #include <string.h>
 #include <stdint.h>
 

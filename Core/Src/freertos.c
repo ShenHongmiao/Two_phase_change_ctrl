@@ -31,6 +31,7 @@
 #include "V_Detect.h"
 #include "data_packet.h"
 #include "serial_to_pc.h"
+#include "temp_pid_ctrl.h"
 #include <string.h>
 /* USER CODE END Includes */
 
@@ -65,7 +66,7 @@ osThreadId_t MonitorTaskHandle;
 const osThreadAttr_t MonitorTask_attributes = {
   .name = "MonitorTask",
   .stack_size = 256 * 4,
-  .priority = (osPriority_t) osPriorityHigh,
+  .priority = (osPriority_t) osPriorityNormal,
 };
 /* Definitions for VoltageWarning */
 osThreadId_t VoltageWarningHandle;
@@ -79,14 +80,14 @@ osThreadId_t Receive_Target_Handle;
 const osThreadAttr_t Receive_Target__attributes = {
   .name = "Receive_Target_",
   .stack_size = 256 * 4,
-  .priority = (osPriority_t) osPriorityRealtime,
+  .priority = (osPriority_t) osPriorityHigh,
 };
 /* Definitions for Ctrl_task */
 osThreadId_t Ctrl_taskHandle;
 const osThreadAttr_t Ctrl_task_attributes = {
   .name = "Ctrl_task",
   .stack_size = 512 * 4,
-  .priority = (osPriority_t) osPriorityHigh,
+  .priority = (osPriority_t) osPriorityAboveNormal,
 };
 /* Definitions for usart2_rx_queue */
 osMessageQueueId_t usart2_rx_queueHandle;
@@ -206,10 +207,7 @@ void StartDefaultTask(void *argument)
   #endif
   NTC_Init();//初始化NTC模块
   Voltage_Init();//初始化电压检测模块
-
-  // 再延迟一下确保消息发送
-  osDelay(50);
-  
+  TempCtrl_Init(&Temp_PID_Controller_CH0);//初始化温度控制模块
   /* Infinite loop */
   for(;;)
   { 
@@ -218,9 +216,8 @@ void StartDefaultTask(void *argument)
     osThreadResume(VoltageWarningHandle);
     osThreadResume(Receive_Target_Handle);
     osThreadResume(Ctrl_taskHandle);
-    
-    //删除自己CMSIS_V1接口
-    osThreadTerminate(NULL);
+    //删除自己,使用CMSIS_V2接口
+    osThreadTerminate(defaultTaskHandle);
     osDelay(1);
   }
   /* USER CODE END StartDefaultTask */
@@ -236,12 +233,11 @@ void StartDefaultTask(void *argument)
 void StartMonitorTask(void *argument)
 {
   /* USER CODE BEGIN StartMonitorTask */
-  
-  
+  uint32_t sys_tick_count_monitor;
   /* Infinite loop */
   for(;;)
   { 
-
+    sys_tick_count_monitor = osKernelGetTickCount(); // 获取系统滴答计数器的当前值
     NTC_StartDMA();//数据利用完毕重新启动DMA转换
     HAL_ADC_PollForConversion(&hadc1, 1); //死等转换完成，确保数据有效(osdelay会打断任务执行逻辑)
     #if WF5803F_Enable
@@ -260,18 +256,16 @@ void StartMonitorTask(void *argument)
     #endif
     #if NTC_CHANNEL1_ENABLE
     //send_ready(CMD_NTC, "CH1:%.2f\n", packet_data.ntc_temp_ch1); // 发送时间: ~1.30ms @115200 (15字节)
-    
+    send2pc(CMD_NTC, &packet_data, NULL);
     #endif
     //发送WF5803F数据
     #if WF5803F_Enable
     //send_ready(CMD_WF5803F, "T:%.2f,P:%.2f\n", packet_data.wf_temperature, packet_data.wf_pressure); // 发送时间: ~2.00ms @115200 (23字节)
     send2pc(CMD_WF5803F, &packet_data, NULL);
     #endif
-
-   
     
     //延迟时间注意要大于ADC转换时间（大概 100ns）+消息发送时间，否则会出现发送信息重叠的问题，以及ADC数据错乱的问题（目前双传感器不带PID发送已经测试最小间隔5ms）
-    osDelay(50);
+    osDelayUntil(sys_tick_count_monitor+100); // 每100ms执行一次
   }
   /* USER CODE END StartMonitorTask */
 }
@@ -286,14 +280,14 @@ void StartMonitorTask(void *argument)
 void StartvoltageWarningtask(void *argument)
 {
   /* USER CODE BEGIN StartvoltageWarningtask */
-    Voltage_StartDMA();//启动电压检测的ADC DMA转换
-    osDelay(1); // 等待ADC转换完成（1ms足够，实际只需约100μs）
-    
-    Voltage_Calculate(&Voltage_DataBuffer);//计算电源电压
-    pack_data(&packet_data);
-    send2pc(CMD_VOLTAGE, &packet_data, NULL);
-    //Voltage_info_send(&Voltage_DataBuffer);//发送电源电压信息: ~1.30ms(OK) 或 ~1.39ms(LOW) @115200
-    // send_message("Voltage Check Done\n");//发送电源电压检查完成消息，约1.20ms @115200
+  Voltage_StartDMA();//启动电压检测的ADC DMA转换
+  osDelay(1); // 等待ADC转换完成（1ms足够，实际只需约100μs）
+  
+  Voltage_Calculate(&Voltage_DataBuffer);//计算电源电压
+  pack_data(&packet_data);
+  send2pc(CMD_VOLTAGE, &packet_data, NULL);
+  //Voltage_info_send(&Voltage_DataBuffer);//发送电源电压信息: ~1.30ms(OK) 或 ~1.39ms(LOW) @115200
+  // send_message("Voltage Check Done\n");//发送电源电压检查完成消息，约1.20ms @115200
   /* Infinite loop */
   for(;;)
   { osDelay(600000);//每10分钟检查一次电压
@@ -322,7 +316,7 @@ void StartReceive_Target_change(void *argument)
   uint32_t received_value;
   osStatus_t status;
   
-  send_message("=== USART Receive Task Started (Priority: Realtime) ===\n");
+  //send_message("=== USART Receive Task Started (Priority: Realtime) ===\n");
   /* Infinite loop */
   for(;;)
   {
@@ -360,10 +354,28 @@ void StartReceive_Target_change(void *argument)
 void StartCtrl_task(void *argument)
 {
   /* USER CODE BEGIN StartCtrl_task */
+  uint32_t sys_tick_count_ctrl;
   /* Infinite loop */
   for(;;)
-  {
-    osDelay(1);
+  { 
+#if PID_CONTROL_ENABLE
+    sys_tick_count_ctrl = osKernelGetTickCount(); // 获取系统滴答计数器的当前值
+    
+    // 使用NTC原始浮点温度值进行PID计算（而非放大100倍的整数值）
+    float current_temp = NTC_DataBuffer.temperature_ch0;
+    
+    // PID计算并设置PWM输出
+    PID_Compute(&Temp_PID_Controller_CH0, current_temp);
+    Set_Heating_PWM((uint16_t)(Temp_PID_Controller_CH0.output));
+    
+    // 更新数据包（包含最新的PID输出值）
+    pack_data(&packet_data);
+    
+    // 发送PID信息到上位机
+    send2pc(CMD_PID_VALUE, &packet_data, NULL);
+    
+    osDelayUntil(sys_tick_count_ctrl+50); // 控制频率20Hz
+#endif
   }
   /* USER CODE END StartCtrl_task */
 }

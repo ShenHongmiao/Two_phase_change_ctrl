@@ -26,8 +26,8 @@ extern "C" {
 #include <math.h>
 #include <stdio.h>
 
-/* Exported variables --------------------------------------------------------*/
-// extern TIM_HandleTypeDef htim3;  // TIM3定时器句柄，用于PWM控制
+/* Exported defines ----------------------------------------------------------*/
+#define PID_CONTROL_ENABLE        1    // 启用PID控制功能
 
 /* Exported types ------------------------------------------------------------*/
 
@@ -53,11 +53,14 @@ typedef struct {
     uint32_t sample_time_ms;   // 采样周期(ms)
 } PID_Controller_t;
 
+/* Exported variables --------------------------------------------------------*/
+extern PID_Controller_t Temp_PID_Controller_CH0; // 温度PID控制器实例
+
 /* Exported constants --------------------------------------------------------*/
 
 /* 目标温度配置 - 可通过此宏修改控制温度 */
-#define TARGET_TEMP_1     30.0f    
-#define TARGET_TEMP_2     35.0f
+#define TARGET_TEMP_1     35.0f    
+#define TARGET_TEMP_2     40.0f
 /* PID参数配置 - 根据不同目标温度可能需要调整 */
 /* 低温区域 (30-50°C) 推荐参数 */
 #define PID_KP             32.5f    // 比例增益

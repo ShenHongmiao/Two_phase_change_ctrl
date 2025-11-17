@@ -4,7 +4,9 @@
 #include "NTC.h"
 #include "WF5803F.h"
 #include "V_Detect.h"
-// #include "PID.h"
+#include "temp_pid_ctrl.h"
+
+
 #include <string.h>
 
 
@@ -21,6 +23,9 @@ typedef struct {
 #if WF5803F_Enable
     int16_t wf_temperature;  // 温度 * 100 (℃)
     int32_t wf_pressure;     // 压力 * 100 (kPa)
+#endif
+#if PID_CONTROL_ENABLE
+    int16_t pid_output_ch0; // PID输出值 (0-1000ms)
 #endif
 
 // PID 部分如有需要可在此添加

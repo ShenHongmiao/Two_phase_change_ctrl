@@ -32,7 +32,7 @@
 /* Private macro -------------------------------------------------------------*/
 
 /* Private variables ---------------------------------------------------------*/
-
+PID_Controller_t Temp_PID_Controller_CH0; // 温度PID控制器实例
 /* Private function prototypes -----------------------------------------------*/
 static float Clamp(float value, float min, float max);
 
@@ -42,14 +42,17 @@ static float Clamp(float value, float min, float max);
  * @brief  设置加热MOS管硬件PWM占空比（0-10000）
  * @param  duty_ms: 0-1000ms（实际PWM周期为1000ms）
  * @note   使用 CubeMX 生成的 TIM3 PWM 控制
+ *         TIM3配置: ARR=9999 (10ms硬件周期), 软件层面模拟1000ms周期
  */
 void Set_Heating_PWM(uint16_t duty_ms)
 {
     // 限幅：确保占空比在有效范围内
     if (duty_ms > 1000) duty_ms = 1000;
-    // 将毫秒转换为 PWM 计数值 (假设 ARR=9999, 1000ms对应10000计数)
+    
+    // 将0-1000ms映射到0-10000 PWM计数值
+    // duty_ms范围0-1000，对应占空比0%-100%
     uint32_t pulse = duty_ms * 10; // 1000ms对应10000计数
-
+    
     // 设置 TIM3 通道1 PWM 占空比 (PC6)
     __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, pulse);
     
