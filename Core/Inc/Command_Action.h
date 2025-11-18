@@ -26,10 +26,12 @@ extern "C" {
 #include "usart.h"
 #include "serial_to_pc.h"
 #include "temp_pid_ctrl.h"
+#include "heating_timed.h"
 #include <stdint.h>
 #include <stdbool.h>
 
 /* Exported types ------------------------------------------------------------*/
+
 
 /**
  * @brief 命令帧结构体
@@ -89,45 +91,38 @@ CommandResult_t Command_Process(const uint8_t *raw_data, uint16_t length);
 
 /**
  * @brief 设置PID Kp参数
- * @param data 数据指针（4字节float）
+ * @param kp_value PID Kp值
  * @return bool 设置是否成功
  */
-bool Command_SetPID_Kp(const uint8_t *data);
+bool Command_SetPID_Kp(float kp_value);
 
 /**
  * @brief 设置PID Ki参数
- * @param data 数据指针（4字节float）
+ * @param ki_value PID Ki值
  * @return bool 设置是否成功
  */
-bool Command_SetPID_Ki(const uint8_t *data);
+bool Command_SetPID_Ki(float ki_value);
 
 /**
  * @brief 设置PID Kd参数
- * @param data 数据指针（4字节float）
+ * @param kd_value PID Kd值
  * @return bool 设置是否成功
  */
-bool Command_SetPID_Kd(const uint8_t *data);
+bool Command_SetPID_Kd(float kd_value);
 
 /**
  * @brief 设置目标温度
- * @param data 数据指针（4字节float）
+ * @param target_temp 目标温度值（℃）
  * @return bool 设置是否成功
  */
-bool Command_SetTargetTemp(const uint8_t *data);
-
-/**
- * @brief 切换工作模式
- * @param data 数据指针（1字节mode）
- * @return bool 设置是否成功
- */
-bool Command_ChangeMode(const uint8_t *data);
+bool Command_SetTargetTemp(float target_temp);
 
 /**
  * @brief 设置加热时间
- * @param data 数据指针（4字节uint32_t，单位ms）
+ * @param heating_time_ms 加热时间（单位ms）
  * @return bool 设置是否成功
  */
-bool Command_ChangeHeatingTime(const uint8_t *data);
+bool Command_ChangeHeatingTime(uint32_t heating_time_ms);
 
 #ifdef __cplusplus
 }

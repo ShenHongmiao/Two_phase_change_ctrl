@@ -16,6 +16,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "Command_Action.h"
+#include "temp_pid_ctrl.h"
 #include <string.h>
 
 /* Private typedef -----------------------------------------------------------*/
@@ -98,6 +99,8 @@ CommandResult_t Command_Execute(const CommandFrame_t *frame)
     }
 
     bool result = false;
+    float float_value;
+    uint32_t uint32_value;
 
     switch (frame->cmd_id) {
         case CMD_SET_PID_KP:
@@ -105,7 +108,8 @@ CommandResult_t Command_Execute(const CommandFrame_t *frame)
             if (frame->data_length != 4) {
                 return CMD_RESULT_INVALID_DATA;
             }
-            result = Command_SetPID_Kp(frame->data);
+            memcpy(&float_value, frame->data, sizeof(float));
+            result = Command_SetPID_Kp(float_value);
             break;
 
         case CMD_SET_PID_KI:
@@ -113,7 +117,8 @@ CommandResult_t Command_Execute(const CommandFrame_t *frame)
             if (frame->data_length != 4) {
                 return CMD_RESULT_INVALID_DATA;
             }
-            result = Command_SetPID_Ki(frame->data);
+            memcpy(&float_value, frame->data, sizeof(float));
+            result = Command_SetPID_Ki(float_value);
             break;
 
         case CMD_SET_PID_KD:
@@ -121,7 +126,8 @@ CommandResult_t Command_Execute(const CommandFrame_t *frame)
             if (frame->data_length != 4) {
                 return CMD_RESULT_INVALID_DATA;
             }
-            result = Command_SetPID_Kd(frame->data);
+            memcpy(&float_value, frame->data, sizeof(float));
+            result = Command_SetPID_Kd(float_value);
             break;
 
         case CMD_SET_TARGET_TEMP:
@@ -129,15 +135,8 @@ CommandResult_t Command_Execute(const CommandFrame_t *frame)
             if (frame->data_length != 4) {
                 return CMD_RESULT_INVALID_DATA;
             }
-            result = Command_SetTargetTemp(frame->data);
-            break;
-
-        case CMD_CHANGE_MODE:
-            // 期望数据长度：1字节（uint8_t）
-            if (frame->data_length != 1) {
-                return CMD_RESULT_INVALID_DATA;
-            }
-            result = Command_ChangeMode(frame->data);
+            memcpy(&float_value, frame->data, sizeof(float));
+            result = Command_SetTargetTemp(float_value);
             break;
 
         case CMD_CHANGE_HEATING_TIME:
@@ -145,7 +144,8 @@ CommandResult_t Command_Execute(const CommandFrame_t *frame)
             if (frame->data_length != 4) {
                 return CMD_RESULT_INVALID_DATA;
             }
-            result = Command_ChangeHeatingTime(frame->data);
+            memcpy(&uint32_value, frame->data, sizeof(uint32_t));
+            result = Command_ChangeHeatingTime(uint32_value);
             break;
 
         default:
@@ -187,26 +187,19 @@ CommandResult_t Command_Process(const uint8_t *raw_data, uint16_t length)
 
 /**
  * @brief 设置PID Kp参数
- * @param data 数据指针（4字节float）
+ * @param kp_value PID Kp值
  * @return bool 设置是否成功
  */
-bool Command_SetPID_Kp(const uint8_t *data)
+bool Command_SetPID_Kp(float kp_value)
 {
-    if (data == NULL) {
-        return false;
-    }
-
 #if PID_CONTROL_ENABLE
-    float kp_value;
-    memcpy(&kp_value, data, sizeof(float));
-
     // 参数合法性检查（根据实际需求调整范围）
     if (kp_value < 0.0f || kp_value > 1000.0f) {
         return false;
     }
 
     // 设置PID Kp参数
-    Temp_PID_Controller_CH0.Kp = kp_value;
+    PID_SetKp(&Temp_PID_Controller_CH0, kp_value);
     
     // 可选：发送调试信息
     send2pc(CMD_TEXT_INFO, NULL, "PID Kp set to: %.2f", kp_value);
@@ -219,26 +212,19 @@ bool Command_SetPID_Kp(const uint8_t *data)
 
 /**
  * @brief 设置PID Ki参数
- * @param data 数据指针（4字节float）
+ * @param ki_value PID Ki值
  * @return bool 设置是否成功
  */
-bool Command_SetPID_Ki(const uint8_t *data)
+bool Command_SetPID_Ki(float ki_value)
 {
-    if (data == NULL) {
-        return false;
-    }
-
 #if PID_CONTROL_ENABLE
-    float ki_value;
-    memcpy(&ki_value, data, sizeof(float));
-
     // 参数合法性检查（根据实际需求调整范围）
     if (ki_value < 0.0f || ki_value > 1000.0f) {
         return false;
     }
 
     // 设置PID Ki参数
-    Temp_PID_Controller_CH0.Ki = ki_value;
+    PID_SetKi(&Temp_PID_Controller_CH0, ki_value);
     
     // 可选：发送调试信息
     send2pc(CMD_TEXT_INFO, NULL, "PID Ki set to: %.2f", ki_value);
@@ -251,26 +237,19 @@ bool Command_SetPID_Ki(const uint8_t *data)
 
 /**
  * @brief 设置PID Kd参数
- * @param data 数据指针（4字节float）
+ * @param kd_value PID Kd值
  * @return bool 设置是否成功
  */
-bool Command_SetPID_Kd(const uint8_t *data)
+bool Command_SetPID_Kd(float kd_value)
 {
-    if (data == NULL) {
-        return false;
-    }
-
 #if PID_CONTROL_ENABLE
-    float kd_value;
-    memcpy(&kd_value, data, sizeof(float));
-
     // 参数合法性检查（根据实际需求调整范围）
     if (kd_value < 0.0f || kd_value > 1000.0f) {
         return false;
     }
 
     // 设置PID Kd参数
-    Temp_PID_Controller_CH0.Kd = kd_value;
+    PID_SetKd(&Temp_PID_Controller_CH0, kd_value);
     
     // 可选：发送调试信息
     send2pc(CMD_TEXT_INFO, NULL, "PID Kd set to: %.2f", kd_value);
@@ -283,26 +262,19 @@ bool Command_SetPID_Kd(const uint8_t *data)
 
 /**
  * @brief 设置目标温度
- * @param data 数据指针（4字节float）
+ * @param target_temp 目标温度值（℃）
  * @return bool 设置是否成功
  */
-bool Command_SetTargetTemp(const uint8_t *data)
+bool Command_SetTargetTemp(float target_temp)
 {
-    if (data == NULL) {
-        return false;
-    }
-
 #if PID_CONTROL_ENABLE
-    float target_temp;
-    memcpy(&target_temp, data, sizeof(float));
-
     // 温度合法性检查（根据实际需求调整范围，例如0-200℃）
     if (target_temp < 0.0f || target_temp > 200.0f) {
         return false;
     }
 
     // 设置目标温度
-    Temp_PID_Controller_CH0.setpoint = target_temp;
+    PID_SetSetpoint(&Temp_PID_Controller_CH0, target_temp);
     
     // 可选：发送调试信息
     send2pc(CMD_TEXT_INFO, NULL, "Target temp set to: %.2f C", target_temp);
@@ -314,69 +286,19 @@ bool Command_SetTargetTemp(const uint8_t *data)
 }
 
 /**
- * @brief 切换工作模式
- * @param data 数据指针（1字节mode）
- * @return bool 设置是否成功
- */
-bool Command_ChangeMode(const uint8_t *data)
-{
-    if (data == NULL) {
-        return false;
-    }
-
-    uint8_t mode = data[0];
-
-    // TODO: 根据实际系统定义模式
-    // 示例：0=待机模式，1=加热模式，2=保温模式等
-    // 这里需要根据您的实际系统实现
-    
-    switch (mode) {
-        case 0x00: // 待机模式
-            // TODO: 实现待机逻辑
-            send2pc(CMD_TEXT_INFO, NULL, "Mode: Standby");
-            break;
-            
-        case 0x01: // 加热模式
-            // TODO: 实现加热逻辑
-            send2pc(CMD_TEXT_INFO, NULL, "Mode: Heating");
-            break;
-            
-        case 0x02: // 保温模式
-            // TODO: 实现保温逻辑
-            send2pc(CMD_TEXT_INFO, NULL, "Mode: Keeping");
-            break;
-            
-        default:
-            return false; // 未知模式
-    }
-
-    return true;
-}
-
-/**
  * @brief 设置加热时间
- * @param data 数据指针（4字节uint32_t，单位ms）
+ * @param heating_time_ms 加热时间（单位ms）
  * @return bool 设置是否成功
  */
-bool Command_ChangeHeatingTime(const uint8_t *data)
+bool Command_ChangeHeatingTime(uint32_t heating_time_ms)
 {
-    if (data == NULL) {
+    // 时间合法性检查（根据实际需求调整）
+    if (heating_time_ms > 5000) { // 5s
         return false;
     }
-
-    uint32_t heating_time_ms;
-    memcpy(&heating_time_ms, data, sizeof(uint32_t));
-
-    // 时间合法性检查（根据实际需求调整，例如最大10小时）
-    if (heating_time_ms > 36000000) { // 10小时 = 10*3600*1000 ms
-        return false;
-    }
-
-    // TODO: 根据实际系统实现加热时间设置
-    // 可能需要设置定时器或修改全局变量
     
-    // 示例：存储到全局变量（需要在其他地方定义）
-    // g_heating_time_ms = heating_time_ms;
+    // 设置加热时间
+    HeatingTimed_FullPower(heating_time_ms);
     
     // 可选：发送调试信息
     send2pc(CMD_TEXT_INFO, NULL, "Heating time set to: %lu ms", heating_time_ms);

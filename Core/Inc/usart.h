@@ -57,8 +57,7 @@ extern UART_HandleTypeDef huart2;
 #define CMD_SET_PID_KI              0xA2
 #define CMD_SET_PID_KD              0xA3
 #define CMD_SET_TARGET_TEMP         0xA4
-#define CMD_CHANGE_MODE             0xA5
-#define CMD_CHANGE_HEATING_TIME     0xA6
+#define CMD_CHANGE_HEATING_TIME     0xA5
 /* USER CODE END Private defines */
 
 void MX_USART1_UART_Init(void);
