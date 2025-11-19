@@ -353,11 +353,12 @@ void StartReceive_Target_change(void *argument)
 void StartCtrl_task(void *argument)
 {
   /* USER CODE BEGIN StartCtrl_task */
-  uint32_t sys_tick_count_ctrl;
+
   /* Infinite loop */
   for(;;)
   { 
 #if PID_CONTROL_ENABLE
+    uint32_t sys_tick_count_ctrl;
     sys_tick_count_ctrl = osKernelGetTickCount(); // 获取系统滴答计数器的当前值
     
     // 使用NTC原始浮点温度值进行PID计算（而非放大100倍的整数值）
@@ -366,9 +367,6 @@ void StartCtrl_task(void *argument)
     // PID计算并设置PWM输出
     PID_Compute(&Temp_PID_Controller_CH0, current_temp);
     Set_Heating_PWM((uint16_t)(Temp_PID_Controller_CH0.output));
-  
-
-    
     
     // 更新数据包（包含最新的PID输出值）
     pack_data(&packet_data);

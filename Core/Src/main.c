@@ -103,12 +103,11 @@ int main(void)
   MX_ADC2_Init();
   /* USER CODE BEGIN 2 */
   
-  // 启动TIM3 PWM输出（临时方案，最好在CubeMX中配置为PWM模式）
-  // 注意：当前TIM3配置为OC模式，需要改为PWM模式才能正常工作
+  //启动TIM3 PWM输出
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
 
-    //上电关闭加热，占空比调节为0，防止误动作
+  //上电关闭加热，占空比调节为0，防止误动作
   __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 0);
   __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 0);
   /* USER CODE END 2 */
