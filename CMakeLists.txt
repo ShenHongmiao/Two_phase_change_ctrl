@@ -51,6 +51,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     Core/Src/data_packet.c
     Core/Src/serial_to_pc.c
     Core/Src/temp_pid_ctrl.c
+    Core/Src/heating_timed.c
 )
 
 # Add include paths

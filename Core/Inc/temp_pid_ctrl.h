@@ -27,7 +27,7 @@ extern "C" {
 #include <stdio.h>
 
 /* Exported defines ----------------------------------------------------------*/
-#define PID_CONTROL_ENABLE        1    // 启用PID控制功能
+#define PID_CONTROL_ENABLE        0    // 启用PID控制功能
 
 /* Exported types ------------------------------------------------------------*/
 
@@ -86,7 +86,7 @@ extern PID_Controller_t Temp_PID_Controller_CH0; // 温度PID控制器实例
 #define TEMP_SAFE_SHUTDOWN      75.0f   // 安全关机温度 (°C)
 
 /* 积分分离配置 */
-#define ENABLE_INTEGRAL_SEPARATION    1    // 积分分离功能开关: 1=启用, 0=禁用
+#define ENABLE_INTEGRAL_SEPARATION    0    // 积分分离功能开关: 1=启用, 0=禁用
 #define INTEGRAL_SEPARATION_THRESHOLD  2.0f  // 积分分离阈值 (°C)，误差超过此值时停止积分
 
 /* Exported macro ------------------------------------------------------------*/

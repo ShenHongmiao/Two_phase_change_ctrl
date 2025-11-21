@@ -9,6 +9,7 @@
 //通过读取0x02寄存器的bit0(DRDY)值来判断是否转换完成,1表示完成
 //转换完成后读取温度和气压数据，原始温度数据Temp_out为16位，分为MSB和LSB。地址为0x09~0x0A
 //原始气压数据Press_out为24位，分为MSB、CSB和LSB。地址为0x06~0x08
+#define WF5803F_Enable 0  // 1: 使能WF5803F传感器读取，0: 禁用
 
 // DMA传输状态标志
 typedef enum {
@@ -24,7 +25,6 @@ typedef enum {
 #define WF5803F_REG_STATUS    0x02        // 状态寄存器
 #define WF5803F_REG_PRESS_MSB 0x06        // 气压数据 MSB
 #define WF5803F_REG_TEMP_MSB  0x09        // 温度数据 MSB
-#define WF5803F_Enable 1  // 1: 使能WF5803F传感器读取，0: 禁用
 
 // WF5803F 数据结构
 typedef struct {

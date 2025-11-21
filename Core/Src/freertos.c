@@ -32,7 +32,7 @@
 #include "data_packet.h"
 #include "serial_to_pc.h"
 #include "temp_pid_ctrl.h"
-#include <string.h>
+#include "heating_timed.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -353,17 +353,16 @@ void StartReceive_Target_change(void *argument)
 void StartCtrl_task(void *argument)
 {
   /* USER CODE BEGIN StartCtrl_task */
-
+  int32_t counter=0;
+  int32_t counter_2=0;
   /* Infinite loop */
   for(;;)
   { 
-#if PID_CONTROL_ENABLE
     uint32_t sys_tick_count_ctrl;
-    sys_tick_count_ctrl = osKernelGetTickCount(); // 获取系统滴答计数器的当前值
-    
     // 使用NTC原始浮点温度值进行PID计算（而非放大100倍的整数值）
     float current_temp = NTC_DataBuffer.temperature_ch0;
-    
+#if PID_CONTROL_ENABLE
+    sys_tick_count_ctrl = osKernelGetTickCount(); // 获取系统滴答计数器的当前值
     // PID计算并设置PWM输出
     PID_Compute(&Temp_PID_Controller_CH0, current_temp);
     Set_Heating_PWM((uint16_t)(Temp_PID_Controller_CH0.output));
@@ -376,7 +375,28 @@ void StartCtrl_task(void *argument)
     
     osDelayUntil(sys_tick_count_ctrl+50); // 控制频率20Hz
 #endif
+#if (!PID_CONTROL_ENABLE && HEATING_TIMED_ENABLE)
+    if(current_temp < 30.0f) {// 非PID模式下，低于30度时加热
+    for(counter=0;counter<100;counter++){ // 非PID模式下，低于30度时加热10次，每次加热0.1秒
+        sys_tick_count_ctrl = osKernelGetTickCount(); // 获取系统滴答计数器的当前值
+        Set_Heating_PWM(1000); // 满功率加热
+        osDelayUntil(sys_tick_count_ctrl+100); 
+    }
+    counter_2++;
+    send2pc(CMD_TEXT_INFO, NULL, "Heating for %lu seconds\n", counter_2);
+    Set_Heating_PWM(0);
+    // counter=0;
   }
+    else {
+      //counter_2=0;
+      Set_Heating_PWM(0);
+      osDelay(100);
+  
+  }
+}
+
+
+#endif
   /* USER CODE END StartCtrl_task */
 }
 
