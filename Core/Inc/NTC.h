@@ -6,7 +6,7 @@
 #include "math.h"
 
 // NTC 热敏电阻参数
-#define NTC_BETA 3380.0f      // NTC 热敏电阻的 Beta 常数 (B值 25°C/50°C)
+#define NTC_BETA 3950.0f      // NTC 热敏电阻的 Beta 常数 (B值 25°C/50°C)
 #define NTC_R0 10000.0f       // NTC 热敏电阻在 T0 温度下的阻值 (10k Ohm @ 25°C)
 #define NTC_T0 298.15f        // 参考温度 T0 (25°C = 298.15K)
 #define NTC_R_SERIES 10000.0f // 串联电阻的阻值 (10k Ohm)

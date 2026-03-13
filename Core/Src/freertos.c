@@ -353,8 +353,10 @@ void StartReceive_Target_change(void *argument)
 void StartCtrl_task(void *argument)
 {
   /* USER CODE BEGIN StartCtrl_task */
+  #if HEATING_TIMED_ENABLE && !PID_CONTROL_ENABLE
   int32_t counter=0;
   int32_t counter_2=0;
+  #endif
   /* Infinite loop */
   for(;;)
   { 
@@ -376,8 +378,8 @@ void StartCtrl_task(void *argument)
     osDelayUntil(sys_tick_count_ctrl+50); // 控制频率20Hz
 #endif
 #if (!PID_CONTROL_ENABLE && HEATING_TIMED_ENABLE)
-    if(current_temp < 30.0f) {// 非PID模式下，低于30度时加热
-    for(counter=0;counter<100;counter++){ // 非PID模式下，低于30度时加热10次，每次加热0.1秒
+    if(current_temp < 40.0f) {// 非PID模式下，低于30度时加热
+    for(counter=0;counter<80;counter++){ // 非PID模式下，低于30度时加热10次，每次加热0.1秒
         sys_tick_count_ctrl = osKernelGetTickCount(); // 获取系统滴答计数器的当前值
         Set_Heating_PWM(1000); // 满功率加热
         osDelayUntil(sys_tick_count_ctrl+100); 
@@ -392,11 +394,10 @@ void StartCtrl_task(void *argument)
       Set_Heating_PWM(0);
       osDelay(100);
   
-  }
-}
-
+    }
 
 #endif
+  }
   /* USER CODE END StartCtrl_task */
 }
 

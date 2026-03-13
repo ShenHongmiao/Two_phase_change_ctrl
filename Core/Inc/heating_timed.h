@@ -35,7 +35,7 @@ extern "C" {
 /* Exported constants --------------------------------------------------------*/
 
 /* 恒定开度加热配置 */
-#define HEATING_TIMED_ENABLE        1       // 启用定时加热功能
+#define HEATING_TIMED_ENABLE        0       // 启用定时加热功能
 #define HEATING_PWM_FULL_POWER      1000    // 满功率占空比 (1000ms = 100%)
 #define HEATING_PWM_OFF             0       // 关闭加热 (0ms = 0%)
 

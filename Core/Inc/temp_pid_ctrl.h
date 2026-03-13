@@ -27,7 +27,7 @@ extern "C" {
 #include <stdio.h>
 
 /* Exported defines ----------------------------------------------------------*/
-#define PID_CONTROL_ENABLE        0    // 启用PID控制功能
+#define PID_CONTROL_ENABLE        1   // 启用PID控制功能
 
 /* Exported types ------------------------------------------------------------*/
 
@@ -63,8 +63,8 @@ extern PID_Controller_t Temp_PID_Controller_CH0; // 温度PID控制器实例
 #define TARGET_TEMP_2     60.0f
 /* PID参数配置 - 根据不同目标温度可能需要调整 */
 /* 低温区域 (30-50°C) 推荐参数 */
-#define PID_KP             72.0f    // 比例增益
-#define PID_KI             2.47f    // 积分增益
+#define PID_KP             230.0f    // 比例增益
+#define PID_KI             0.0f    // 积分增益
 #define PID_KD             0.0f    // 微分增益
 
 
