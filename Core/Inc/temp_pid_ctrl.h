@@ -59,17 +59,17 @@ extern PID_Controller_t Temp_PID_Controller_CH0; // 温度PID控制器实例
 /* Exported constants --------------------------------------------------------*/
 
 /* 目标温度配置 - 可通过此宏修改控制温度 */
-#define TARGET_TEMP_1     35.0f    
-#define TARGET_TEMP_2     60.0f
+#define TARGET_TEMP_1     30.0f    
+#define TARGET_TEMP_2     80.0f
 /* PID参数配置 - 根据不同目标温度可能需要调整 */
 /* 低温区域 (30-50°C) 推荐参数 */
-#define PID_KP             230.0f    // 比例增益
-#define PID_KI             0.0f    // 积分增益
+#define PID_KP             85.5f    // 比例增益230等幅振荡点，周期9s
+#define PID_KI             5.5f    // 积分增益
 #define PID_KD             0.0f    // 微分增益
 
 
 /* PID控制器配置 */
-#define PID_SAMPLE_TIME_MS      10    // PID采样周期 (ms),建议与传感器读取周期一致（在freertos.c中）
+#define PID_SAMPLE_TIME_MS      50    // PID采样周期 (ms),建议与传感器读取周期一致（在freertos.c中）
 #define PID_OUTPUT_MAX          1000.0f // PID输出上限 (1000ms = 全功率)
 #define PID_OUTPUT_MIN          0.0f    // PID输出下限 (0ms = 关闭)
 #define PID_INTEGRAL_MAX        500.0f  // 积分限幅最大值
@@ -86,8 +86,8 @@ extern PID_Controller_t Temp_PID_Controller_CH0; // 温度PID控制器实例
 #define TEMP_SAFE_SHUTDOWN      75.0f   // 安全关机温度 (°C)
 
 /* 积分分离配置 */
-#define ENABLE_INTEGRAL_SEPARATION    0    // 积分分离功能开关: 1=启用, 0=禁用
-#define INTEGRAL_SEPARATION_THRESHOLD  2.0f  // 积分分离阈值 (°C)，误差超过此值时停止积分
+#define ENABLE_INTEGRAL_SEPARATION    1    // 积分分离功能开关: 1=启用, 0=禁用
+#define INTEGRAL_SEPARATION_THRESHOLD  5.0f  // 积分分离阈值 (°C)，误差超过此值时停止积分
 
 /* Exported macro ------------------------------------------------------------*/
 

@@ -33,6 +33,7 @@
 #include "serial_to_pc.h"
 #include "temp_pid_ctrl.h"
 #include "heating_timed.h"
+#include <stdint.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -314,7 +315,7 @@ void StartReceive_Target_change(void *argument)
   /* USER CODE BEGIN StartReceive_Target_change */
   uint32_t received_value;
   osStatus_t status;
-  
+  //uint8_t received_data;
   //send_message("=== USART Receive Task Started (Priority: Realtime) ===\n");
   /* Infinite loop */
   for(;;)
@@ -327,8 +328,16 @@ void StartReceive_Target_change(void *argument)
 
     if (status == osOK) {
       // 从队列中获取环形缓冲池中的缓冲区指针
-      // uint8_t *received_data = (uint8_t *)received_value;  // 暂时不使用接收数据
+      //uint8_t *received_data = (uint8_t *)received_value;  // 暂时不使用接收数据
       
+      if(Temp_PID_Controller_CH0.setpoint == TARGET_TEMP_1) {
+        PID_Reset(&Temp_PID_Controller_CH0);
+        PID_SetSetpoint(&Temp_PID_Controller_CH0, TARGET_TEMP_2);
+      }
+      else {
+        PID_Reset(&Temp_PID_Controller_CH0);
+        PID_SetSetpoint(&Temp_PID_Controller_CH0, TARGET_TEMP_1);
+      }
       // 发送固定应答数据 0xB1, 0xB2
       send_response();  // 参数已无实际作用，传 0 和 NULL 即可
       
@@ -375,7 +384,7 @@ void StartCtrl_task(void *argument)
     // 发送PID信息到上位机
     send2pc(CMD_PID_VALUE, &packet_data, NULL);
     
-    osDelayUntil(sys_tick_count_ctrl+50); // 控制频率20Hz
+    osDelayUntil(sys_tick_count_ctrl+Temp_PID_Controller_CH0.sample_time_ms); // 控制频率1/PID_SAMPLE_TIME_MS HZ
 #endif
 #if (!PID_CONTROL_ENABLE && HEATING_TIMED_ENABLE)
     if(current_temp < 40.0f) {// 非PID模式下，低于30度时加热
